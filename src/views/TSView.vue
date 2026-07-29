@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useNotes } from '../composables/useNotes'
 
 const CATEGORIES = ['MES', 'SPC', 'REPORT']
@@ -10,8 +10,11 @@ const filterDate = ref('')       // '' = 전체
 const filterCategory = ref('')   // '' = 전체
 const searchKeyword = ref('')
 
-const mode = ref('view')         // 'view' | 'add' | 'edit'
 const selectedId = ref(null)
+const selectedNote = computed(() => notes.value.find(n => n.id === selectedId.value) || null)
+
+const showModal = ref(false)
+const modalMode = ref('add')     // 'add' | 'edit'
 const draft = ref({ note_date: '', category: 'MES', title: '', request_content: '', resolution_content: '' })
 
 function todayStr() {
@@ -27,25 +30,14 @@ async function reload() {
 }
 
 onMounted(reload)
-watch([filterDate, filterCategory], () => {
-  if (mode.value === 'view') reload()
-})
+watch([filterDate, filterCategory], reload)
 
 function selectRow(note) {
-  if (mode.value !== 'view') return
   selectedId.value = note.id
-  draft.value = {
-    note_date: note.note_date,
-    category: note.category,
-    title: note.title,
-    request_content: note.request_content || '',
-    resolution_content: note.resolution_content || ''
-  }
 }
 
-function startAdd() {
-  mode.value = 'add'
-  selectedId.value = null
+function openAdd() {
+  modalMode.value = 'add'
   draft.value = {
     note_date: filterDate.value || todayStr(),
     category: filterCategory.value || 'MES',
@@ -53,27 +45,24 @@ function startAdd() {
     request_content: '',
     resolution_content: ''
   }
+  showModal.value = true
 }
 
-function startEdit() {
-  if (!selectedId.value) return
-  mode.value = 'edit'
-}
-
-function cancelEdit() {
-  mode.value = 'view'
-  if (selectedId.value) {
-    const note = notes.value.find(n => n.id === selectedId.value)
-    if (note) {
-      draft.value = {
-        note_date: note.note_date,
-        category: note.category,
-        title: note.title,
-        request_content: note.request_content || '',
-        resolution_content: note.resolution_content || ''
-      }
-    }
+function openEdit() {
+  if (!selectedNote.value) return
+  modalMode.value = 'edit'
+  draft.value = {
+    note_date: selectedNote.value.note_date,
+    category: selectedNote.value.category,
+    title: selectedNote.value.title,
+    request_content: selectedNote.value.request_content || '',
+    resolution_content: selectedNote.value.resolution_content || ''
   }
+  showModal.value = true
+}
+
+function closeModal() {
+  showModal.value = false
 }
 
 async function save() {
@@ -89,15 +78,15 @@ async function save() {
     resolution_content: draft.value.resolution_content
   }
 
-  if (mode.value === 'add') {
+  if (modalMode.value === 'add') {
     const created = await insertNote(payload)
     await reload()
     selectedId.value = created.id
-  } else if (mode.value === 'edit') {
+  } else {
     await updateNote(selectedId.value, payload)
     await reload()
   }
-  mode.value = 'view'
+  showModal.value = false
 }
 </script>
 
@@ -106,12 +95,12 @@ async function save() {
     <aside class="side">
       <div class="field">
         <label>날짜</label>
-        <input type="date" v-model="filterDate" :disabled="mode !== 'view'" />
-        <button v-if="filterDate" class="clear" @click="filterDate = ''" :disabled="mode !== 'view'">전체</button>
+        <input type="date" v-model="filterDate" />
+        <button v-if="filterDate" class="clear" @click="filterDate = ''">전체</button>
       </div>
       <div class="field">
         <label>분류</label>
-        <select v-model="filterCategory" :disabled="mode !== 'view'">
+        <select v-model="filterCategory">
           <option value="">전체</option>
           <option v-for="c in CATEGORIES" :key="c" :value="c">{{ c }}</option>
         </select>
@@ -120,19 +109,16 @@ async function save() {
 
     <main class="main">
       <div class="toolbar">
-        <button v-if="mode === 'view'" @click="startAdd">추가</button>
-        <button v-if="mode === 'view'" :disabled="!selectedId" @click="startEdit">수정</button>
-        <button v-if="mode !== 'view'" @click="save">저장</button>
-        <button v-if="mode !== 'view'" @click="cancelEdit">취소</button>
+        <button @click="openAdd">추가</button>
+        <button :disabled="!selectedId" @click="openEdit">수정</button>
         <input
           type="text"
           class="search-input"
           v-model="searchKeyword"
-          :disabled="mode !== 'view'"
           placeholder="제목·내용 검색"
           @keyup.enter="reload"
         />
-        <button :disabled="mode !== 'view'" @click="reload">검색</button>
+        <button @click="reload">검색</button>
       </div>
 
       <div class="grid">
@@ -145,65 +131,66 @@ async function save() {
             </tr>
           </thead>
           <tbody>
-            <tr v-if="mode === 'add'" class="editing-row">
-              <td><input type="date" v-model="draft.note_date" /></td>
-              <td>
-                <select v-model="draft.category">
-                  <option v-for="c in CATEGORIES" :key="c" :value="c">{{ c }}</option>
-                </select>
-              </td>
-              <td><input type="text" v-model="draft.title" placeholder="제목 입력" /></td>
-            </tr>
             <tr
               v-for="note in notes"
               :key="note.id"
-              :class="{ selected: note.id === selectedId, 'editing-row': mode === 'edit' && note.id === selectedId }"
+              :class="{ selected: note.id === selectedId }"
               @click="selectRow(note)"
             >
-              <template v-if="mode === 'edit' && note.id === selectedId">
-                <td><input type="date" v-model="draft.note_date" @click.stop /></td>
-                <td>
-                  <select v-model="draft.category" @click.stop>
-                    <option v-for="c in CATEGORIES" :key="c" :value="c">{{ c }}</option>
-                  </select>
-                </td>
-                <td><input type="text" v-model="draft.title" @click.stop /></td>
-              </template>
-              <template v-else>
-                <td>{{ note.note_date }}</td>
-                <td>{{ note.category }}</td>
-                <td>{{ note.title }}</td>
-              </template>
+              <td>{{ note.note_date }}</td>
+              <td>{{ note.category }}</td>
+              <td>{{ note.title }}</td>
             </tr>
-            <tr v-if="!loading && notes.length === 0 && mode !== 'add'">
+            <tr v-if="!loading && notes.length === 0">
               <td colspan="3" class="empty">항목이 없습니다.</td>
             </tr>
           </tbody>
         </table>
       </div>
 
-      <div class="detail" v-if="mode === 'view'">
+      <div class="detail">
         <div class="detail-section">
           <label>요청사항</label>
-          <div class="view-text">{{ draft.request_content || (selectedId ? '' : '행을 클릭하면 내용이 표시됩니다.') }}</div>
+          <div class="view-text">{{ selectedNote ? selectedNote.request_content : '행을 클릭하면 내용이 표시됩니다.' }}</div>
         </div>
         <div class="detail-section">
           <label>처리사항</label>
-          <div class="view-text">{{ draft.resolution_content }}</div>
-        </div>
-      </div>
-
-      <div class="detail" v-else>
-        <div class="detail-section">
-          <label>요청사항</label>
-          <textarea v-model="draft.request_content" placeholder="요청사항을 입력하세요."></textarea>
-        </div>
-        <div class="detail-section">
-          <label>처리사항</label>
-          <textarea v-model="draft.resolution_content" placeholder="처리사항을 입력하세요."></textarea>
+          <div class="view-text">{{ selectedNote ? selectedNote.resolution_content : '' }}</div>
         </div>
       </div>
     </main>
+
+    <div v-if="showModal" class="modal-overlay" @click.self="closeModal">
+      <div class="modal">
+        <h3>{{ modalMode === 'add' ? '항목 추가' : '항목 수정' }}</h3>
+        <div class="modal-row">
+          <label>날짜</label>
+          <input type="date" v-model="draft.note_date" />
+        </div>
+        <div class="modal-row">
+          <label>분류</label>
+          <select v-model="draft.category">
+            <option v-for="c in CATEGORIES" :key="c" :value="c">{{ c }}</option>
+          </select>
+        </div>
+        <div class="modal-row">
+          <label>제목</label>
+          <input type="text" v-model="draft.title" placeholder="제목 입력" />
+        </div>
+        <div class="modal-row">
+          <label>요청사항</label>
+          <textarea v-model="draft.request_content" placeholder="요청사항을 입력하세요."></textarea>
+        </div>
+        <div class="modal-row">
+          <label>처리사항</label>
+          <textarea v-model="draft.resolution_content" placeholder="처리사항을 입력하세요."></textarea>
+        </div>
+        <div class="modal-actions">
+          <button @click="save">저장</button>
+          <button @click="closeModal">취소</button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -292,18 +279,12 @@ th, td {
 .col-date { width: 130px; }
 .col-cat { width: 100px; }
 
-tbody tr:not(.editing-row) {
+tbody tr {
   cursor: pointer;
 }
 
 tbody tr.selected {
   background: #eef6ff;
-}
-
-tbody tr.editing-row td input,
-tbody tr.editing-row td select {
-  width: 100%;
-  box-sizing: border-box;
 }
 
 .empty {
@@ -334,18 +315,6 @@ tbody tr.editing-row td select {
   margin-bottom: 4px;
 }
 
-.detail-section textarea {
-  flex: 1;
-  min-height: 0;
-  width: 100%;
-  resize: none;
-  box-sizing: border-box;
-  padding: 10px;
-  font-size: 14px;
-  line-height: 1.5;
-  font-family: inherit;
-}
-
 .view-text {
   flex: 1;
   min-height: 0;
@@ -357,5 +326,70 @@ tbody tr.editing-row td select {
   white-space: pre-wrap;
   background: #fafafa;
   border-radius: 4px;
+}
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+
+.modal {
+  background: #fff;
+  width: 420px;
+  max-width: 90vw;
+  max-height: 85vh;
+  overflow-y: auto;
+  padding: 20px;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.modal h3 {
+  margin: 0 0 4px;
+}
+
+.modal-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.modal-row label {
+  font-size: 12px;
+  color: #666;
+}
+
+.modal-row input,
+.modal-row select {
+  padding: 6px 8px;
+  box-sizing: border-box;
+}
+
+.modal-row textarea {
+  min-height: 80px;
+  padding: 8px;
+  font-family: inherit;
+  font-size: 14px;
+  resize: vertical;
+  box-sizing: border-box;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.modal-actions button {
+  padding: 6px 16px;
+  cursor: pointer;
 }
 </style>
