@@ -11,7 +11,7 @@ const filterCategory = ref('')   // '' = 전체
 
 const mode = ref('view')         // 'view' | 'add' | 'edit'
 const selectedId = ref(null)
-const draft = ref({ note_date: '', category: 'MES', title: '', content: '' })
+const draft = ref({ note_date: '', category: 'MES', title: '', request_content: '', resolution_content: '' })
 
 function todayStr() {
   return new Date().toISOString().slice(0, 10)
@@ -29,7 +29,13 @@ watch([filterDate, filterCategory], () => {
 function selectRow(note) {
   if (mode.value !== 'view') return
   selectedId.value = note.id
-  draft.value = { note_date: note.note_date, category: note.category, title: note.title, content: note.content || '' }
+  draft.value = {
+    note_date: note.note_date,
+    category: note.category,
+    title: note.title,
+    request_content: note.request_content || '',
+    resolution_content: note.resolution_content || ''
+  }
 }
 
 function startAdd() {
@@ -39,7 +45,8 @@ function startAdd() {
     note_date: filterDate.value || todayStr(),
     category: filterCategory.value || 'MES',
     title: '',
-    content: ''
+    request_content: '',
+    resolution_content: ''
   }
 }
 
@@ -53,7 +60,13 @@ function cancelEdit() {
   if (selectedId.value) {
     const note = notes.value.find(n => n.id === selectedId.value)
     if (note) {
-      draft.value = { note_date: note.note_date, category: note.category, title: note.title, content: note.content || '' }
+      draft.value = {
+        note_date: note.note_date,
+        category: note.category,
+        title: note.title,
+        request_content: note.request_content || '',
+        resolution_content: note.resolution_content || ''
+      }
     }
   }
 }
@@ -67,7 +80,8 @@ async function save() {
     note_date: draft.value.note_date,
     category: draft.value.category,
     title: draft.value.title,
-    content: draft.value.content
+    request_content: draft.value.request_content,
+    resolution_content: draft.value.resolution_content
   }
 
   if (mode.value === 'add') {
@@ -155,11 +169,22 @@ async function save() {
       </div>
 
       <div class="detail">
-        <textarea
-          v-model="draft.content"
-          :disabled="mode === 'view'"
-          placeholder="행을 클릭하면 내용이 표시됩니다."
-        ></textarea>
+        <div class="detail-section">
+          <label>요청사항</label>
+          <textarea
+            v-model="draft.request_content"
+            :disabled="mode === 'view'"
+            placeholder="행을 클릭하면 내용이 표시됩니다."
+          ></textarea>
+        </div>
+        <div class="detail-section">
+          <label>처리사항</label>
+          <textarea
+            v-model="draft.resolution_content"
+            :disabled="mode === 'view'"
+            placeholder="행을 클릭하면 내용이 표시됩니다."
+          ></textarea>
+        </div>
       </div>
     </main>
   </div>
@@ -266,12 +291,30 @@ tbody tr.editing-row td select {
 
 .detail {
   flex: 1;
+  min-height: 0;
   padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
-.detail textarea {
+.detail-section {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.detail-section label {
+  font-size: 12px;
+  color: #666;
+  margin-bottom: 4px;
+}
+
+.detail-section textarea {
+  flex: 1;
+  min-height: 0;
   width: 100%;
-  height: 100%;
   resize: none;
   box-sizing: border-box;
   padding: 10px;
