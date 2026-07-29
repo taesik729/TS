@@ -292,6 +292,7 @@ async function save() {
 
 table {
   width: 100%;
+  table-layout: fixed;
   border-collapse: separate;
   border-spacing: 0;
   background: var(--color-surface);
@@ -335,6 +336,7 @@ tbody tr:last-child td {
   white-space: pre-line;
   line-height: 1.5;
   color: var(--color-text);
+  word-break: break-word;
 }
 
 tbody tr {
