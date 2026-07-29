@@ -24,10 +24,10 @@ Vue 3 (`<script setup>`) + Vite + Supabase(JS client). 라우터/상태관리 �
 
 - **태식팜(FRONTEND) 프로젝트와 동일한 Supabase 인스턴스를 재사용** (별도 프로젝트 아님)
 - 이 앱 전용 테이블: `ts_notes` (RLS 비활성화 — 개인용 도구라 로그인 없이 anon key로 직접 CRUD)
-- 마이그레이션: `src/supabase/migrations/001_init.sql`
+- 마이그레이션: `src/supabase/migrations/001_init.sql`, `002_split_content.sql`
 
 ```sql
-ts_notes: id, note_date(date), category(MES|SPC|REPORT), title, content, created_at, updated_at
+ts_notes: id, note_date(date), category(MES|SPC|REPORT), title, request_content, resolution_content, created_at, updated_at
 ```
 
 ---
@@ -65,8 +65,8 @@ src/
 - **좌측**: 날짜 콤보 + 분류 콤보(MES/SPC/REPORT) — 그리드 필터링
 - **우측 상단**: 추가 / 수정 / 저장 / 취소 버튼
 - **그리드**: 날짜·분류·제목 목록. "추가"/"수정" 시 해당 행이 인라인 편집 가능(date/select/text input)으로 전환
-- **하단**: 메모장 형태 textarea (content). 읽기 모드에선 비활성화, 추가/수정 모드에서 편집 가능
-- **저장 버튼 하나로 그리드(제목 등) + 하단(내용)을 한 번에 insert/update** — 두 단계로 나눠 저장하지 않음
+- **하단**: 상하로 분할된 메모장 textarea 2개 — 위 **요청사항**(request_content) / 아래 **처리사항**(resolution_content). 읽기 모드에선 비활성화, 추가/수정 모드에서 편집 가능 (좌우 분할은 모바일에서 안 보여서 상하 분할로 결정)
+- **저장 버튼 하나로 그리드(제목 등) + 하단(요청사항/처리사항)을 한 번에 insert/update** — 단계로 나눠 저장하지 않음
 
 ---
 
