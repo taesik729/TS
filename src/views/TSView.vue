@@ -141,8 +141,8 @@ async function save() {
             >
               <td>{{ note.category }}</td>
               <td>{{ note.title }}</td>
-              <td class="truncate">{{ note.request_content }}</td>
-              <td class="truncate">{{ note.resolution_content }}</td>
+              <td class="content-cell">{{ note.request_content }}</td>
+              <td class="content-cell">{{ note.resolution_content }}</td>
               <td>{{ note.note_date }}</td>
             </tr>
             <tr v-if="!loading && notes.length === 0">
@@ -150,17 +150,6 @@ async function save() {
             </tr>
           </tbody>
         </table>
-      </div>
-
-      <div class="detail">
-        <div class="detail-section">
-          <label>요청사항</label>
-          <div class="view-text">{{ selectedNote ? selectedNote.request_content : '행을 클릭하면 내용이 표시됩니다.' }}</div>
-        </div>
-        <div class="detail-section">
-          <label>처리사항</label>
-          <div class="view-text">{{ selectedNote ? selectedNote.resolution_content : '' }}</div>
-        </div>
       </div>
     </main>
 
@@ -263,9 +252,8 @@ async function save() {
 }
 
 .grid {
-  flex: 0 0 45%;
+  flex: 1;
   overflow-y: auto;
-  border-bottom: 1px solid #ddd;
 }
 
 table {
@@ -278,17 +266,16 @@ th, td {
   border-bottom: 1px solid #eee;
   text-align: left;
   font-size: 14px;
+  vertical-align: top;
 }
 
 .col-date { width: 110px; }
 .col-cat { width: 90px; }
 .col-title { width: 160px; }
 
-.truncate {
-  max-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+.content-cell {
+  white-space: pre-line;
+  line-height: 1.4;
 }
 
 tbody tr {
@@ -303,41 +290,6 @@ tbody tr.selected {
   text-align: center;
   color: #999;
   padding: 24px;
-}
-
-.detail {
-  flex: 1;
-  min-height: 0;
-  padding: 12px 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.detail-section {
-  flex: 1;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-}
-
-.detail-section label {
-  font-size: 12px;
-  color: #666;
-  margin-bottom: 4px;
-}
-
-.view-text {
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
-  padding: 10px;
-  font-size: 14px;
-  line-height: 1.5;
-  color: #333;
-  white-space: pre-wrap;
-  background: #fafafa;
-  border-radius: 4px;
 }
 
 .modal-overlay {
