@@ -37,12 +37,13 @@ ts_notes: id, note_date(date), category(MES|SPC|REPORT), title, request_content,
 ```
 src/
 ├── router/
-│   └── index.js            # /settings, /ts(기본), /work, /study
+│   └── index.js            # /settings, /csr, /ts(기본), /work, /study
 ├── components/
-│   └── BottomNav.vue        # 하단 4탭 (환경설정/TS/업무파악/공부)
+│   └── BottomNav.vue        # 하단 5탭 (기준정보/CSR/TS/업무파악/공부)
 ├── views/
 │   ├── TSView.vue           # TS(트러블슈팅) 화면 — 필터+그리드+상세 모두 포함, 컴포넌트 분리 안 함
-│   ├── SettingsView.vue     # 환경설정 — 준비중 placeholder
+│   ├── SettingsView.vue     # 기준정보 — 준비중 placeholder
+│   ├── CSRView.vue          # CSR — 준비중 placeholder
 │   ├── WorkView.vue         # 업무파악 — 준비중 placeholder
 │   └── StudyView.vue        # 공부 — 준비중 placeholder
 ├── composables/
@@ -56,9 +57,9 @@ src/
 
 ## 하단 네비게이션
 
-- 4탭: **환경설정 / TS / 업무파악 / 공부** ("TS" = Troubleshooting 약자)
-- 각 탭은 좌측 사이드(aside) + 우측 메인 영역 레이아웃을 공유 — 좌측에는 탭마다 다른 콤보/텍스트가 들어갈 수 있음 (TS는 날짜·분류 필터, 나머지는 아직 미정)
-- 환경설정/업무파악/공부는 아직 내용 미정 — 향후 설계 후 구현 예정
+- 5탭: **기준정보 / CSR / TS / 업무파악 / 공부** ("TS" = Troubleshooting 약자, "기준정보"는 예전 "환경설정"에서 이름 변경)
+- 각 탭은 좌측 사이드(aside) + 우측 메인 영역 레이아웃을 공유 — 좌측에는 탭마다 다른 콤보/텍스트가 들어갈 수 있음 (TS는 기간·분류 필터, 나머지는 아직 미정)
+- 기준정보/CSR/업무파악/공부는 아직 내용 미정 — 향후 설계 후 구현 예정
 
 ## TS 탭 화면 동작
 
