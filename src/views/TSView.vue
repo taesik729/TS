@@ -182,22 +182,25 @@ async function save() {
         </table>
       </div>
 
-      <div class="detail">
+      <div class="detail" v-if="mode === 'view'">
         <div class="detail-section">
           <label>요청사항</label>
-          <textarea
-            v-model="draft.request_content"
-            :disabled="mode === 'view'"
-            placeholder="행을 클릭하면 내용이 표시됩니다."
-          ></textarea>
+          <div class="view-text">{{ draft.request_content || (selectedId ? '' : '행을 클릭하면 내용이 표시됩니다.') }}</div>
         </div>
         <div class="detail-section">
           <label>처리사항</label>
-          <textarea
-            v-model="draft.resolution_content"
-            :disabled="mode === 'view'"
-            placeholder="행을 클릭하면 내용이 표시됩니다."
-          ></textarea>
+          <div class="view-text">{{ draft.resolution_content }}</div>
+        </div>
+      </div>
+
+      <div class="detail" v-else>
+        <div class="detail-section">
+          <label>요청사항</label>
+          <textarea v-model="draft.request_content" placeholder="요청사항을 입력하세요."></textarea>
+        </div>
+        <div class="detail-section">
+          <label>처리사항</label>
+          <textarea v-model="draft.resolution_content" placeholder="처리사항을 입력하세요."></textarea>
         </div>
       </div>
     </main>
@@ -341,5 +344,18 @@ tbody tr.editing-row td select {
   font-size: 14px;
   line-height: 1.5;
   font-family: inherit;
+}
+
+.view-text {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 10px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #333;
+  white-space: pre-wrap;
+  background: #fafafa;
+  border-radius: 4px;
 }
 </style>
