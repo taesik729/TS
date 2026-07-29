@@ -125,9 +125,11 @@ async function save() {
         <table>
           <thead>
             <tr>
-              <th class="col-date">날짜</th>
               <th class="col-cat">분류</th>
-              <th>제목</th>
+              <th class="col-title">제목</th>
+              <th>요청사항</th>
+              <th>처리사항</th>
+              <th class="col-date">날짜</th>
             </tr>
           </thead>
           <tbody>
@@ -137,12 +139,14 @@ async function save() {
               :class="{ selected: note.id === selectedId }"
               @click="selectRow(note)"
             >
-              <td>{{ note.note_date }}</td>
               <td>{{ note.category }}</td>
               <td>{{ note.title }}</td>
+              <td class="truncate">{{ note.request_content }}</td>
+              <td class="truncate">{{ note.resolution_content }}</td>
+              <td>{{ note.note_date }}</td>
             </tr>
             <tr v-if="!loading && notes.length === 0">
-              <td colspan="3" class="empty">항목이 없습니다.</td>
+              <td colspan="5" class="empty">항목이 없습니다.</td>
             </tr>
           </tbody>
         </table>
@@ -276,8 +280,16 @@ th, td {
   font-size: 14px;
 }
 
-.col-date { width: 130px; }
-.col-cat { width: 100px; }
+.col-date { width: 110px; }
+.col-cat { width: 90px; }
+.col-title { width: 160px; }
+
+.truncate {
+  max-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 
 tbody tr {
   cursor: pointer;
