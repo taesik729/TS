@@ -177,11 +177,11 @@ async function save() {
           <label>제목</label>
           <input type="text" v-model="draft.title" placeholder="제목 입력" />
         </div>
-        <div class="modal-row">
+        <div class="modal-row content-row">
           <label>요청사항</label>
           <textarea v-model="draft.request_content" placeholder="요청사항을 입력하세요."></textarea>
         </div>
-        <div class="modal-row">
+        <div class="modal-row content-row">
           <label>처리사항</label>
           <textarea v-model="draft.resolution_content" placeholder="처리사항을 입력하세요."></textarea>
         </div>
@@ -340,15 +340,15 @@ tbody tr.selected {
 
 .modal {
   background: #fff;
-  width: 420px;
-  max-width: 90vw;
-  max-height: 85vh;
+  width: 720px;
+  max-width: 95vw;
+  max-height: 92vh;
   overflow-y: auto;
-  padding: 20px;
+  padding: 24px;
   border-radius: 8px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 14px;
 }
 
 .modal h3 {
@@ -379,6 +379,12 @@ tbody tr.selected {
   font-size: 14px;
   resize: vertical;
   box-sizing: border-box;
+}
+
+.content-row textarea {
+  min-height: 180px;
+  font-size: 15px;
+  line-height: 1.5;
 }
 
 .modal-actions {
