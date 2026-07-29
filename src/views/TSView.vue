@@ -344,8 +344,12 @@ tbody tr {
   transition: background 0.1s ease;
 }
 
+tbody tr:nth-child(even) {
+  background: #fafbfc;
+}
+
 tbody tr:hover {
-  background: #f7f9fc;
+  background: #f0f3f8;
 }
 
 tbody tr.selected {
