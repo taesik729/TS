@@ -168,7 +168,7 @@ async function save() {
 <style scoped>
 .board {
   display: flex;
-  height: 100vh;
+  height: 100%;
   font-family: -apple-system, 'Malgun Gothic', sans-serif;
 }
 
