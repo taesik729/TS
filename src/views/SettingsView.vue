@@ -14,9 +14,10 @@
 }
 
 .side {
-  width: 200px;
+  width: 220px;
   flex-shrink: 0;
-  border-right: 1px solid #ddd;
+  background: var(--color-surface);
+  border-right: 1px solid var(--color-border);
 }
 
 .main {
@@ -27,7 +28,7 @@
 }
 
 .placeholder {
-  color: #999;
+  color: var(--color-text-muted);
   font-size: 14px;
 }
 </style>

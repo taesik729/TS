@@ -30,10 +30,11 @@ const items = [
 <style scoped>
 .bottom-nav {
   flex-shrink: 0;
-  height: 60px;
+  height: 64px;
   display: flex;
-  border-top: 1px solid #ddd;
-  background: #fff;
+  border-top: 1px solid var(--color-border);
+  background: var(--color-surface);
+  box-shadow: 0 -1px 4px rgba(16, 24, 40, 0.04);
 }
 
 .nav-item {
@@ -42,12 +43,17 @@ const items = [
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 2px;
+  gap: 3px;
   border: none;
+  border-radius: 0;
   background: none;
   cursor: pointer;
-  color: #888;
+  color: var(--color-text-muted);
   font-family: inherit;
+}
+
+.nav-item:hover:not(.active) {
+  background: #f7f9fc;
 }
 
 .nav-item .icon {
@@ -57,10 +63,11 @@ const items = [
 
 .nav-item .label {
   font-size: 11px;
+  font-weight: 500;
 }
 
 .nav-item.active {
-  color: #2e7d32;
-  font-weight: bold;
+  color: var(--color-primary);
+  font-weight: 700;
 }
 </style>

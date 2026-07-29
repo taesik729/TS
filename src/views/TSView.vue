@@ -6,7 +6,8 @@ const CATEGORIES = ['MES', 'SPC', 'REPORT']
 
 const { notes, loading, fetchList, insertNote, updateNote } = useNotes()
 
-const filterDate = ref('')       // '' = 전체
+const filterDateFrom = ref('')   // '' = 제한 없음
+const filterDateTo = ref('')     // '' = 제한 없음
 const filterCategory = ref('')   // '' = 전체
 const searchKeyword = ref('')
 
@@ -23,14 +24,20 @@ function todayStr() {
 
 async function reload() {
   await fetchList({
-    date: filterDate.value || null,
+    dateFrom: filterDateFrom.value || null,
+    dateTo: filterDateTo.value || null,
     category: filterCategory.value || null,
     keyword: searchKeyword.value.trim() || null
   })
 }
 
+function clearDateRange() {
+  filterDateFrom.value = ''
+  filterDateTo.value = ''
+}
+
 onMounted(reload)
-watch([filterDate, filterCategory], reload)
+watch([filterDateFrom, filterDateTo, filterCategory], reload)
 
 function selectRow(note) {
   selectedId.value = note.id
@@ -39,7 +46,7 @@ function selectRow(note) {
 function openAdd() {
   modalMode.value = 'add'
   draft.value = {
-    note_date: filterDate.value || todayStr(),
+    note_date: filterDateFrom.value || todayStr(),
     category: filterCategory.value || 'MES',
     title: '',
     request_content: '',
@@ -94,9 +101,13 @@ async function save() {
   <div class="board">
     <aside class="side">
       <div class="field">
-        <label>날짜</label>
-        <input type="date" v-model="filterDate" />
-        <button v-if="filterDate" class="clear" @click="filterDate = ''">전체</button>
+        <label>기간</label>
+        <div class="range-inputs">
+          <input type="date" v-model="filterDateFrom" />
+          <span class="range-sep">~</span>
+          <input type="date" v-model="filterDateTo" />
+        </div>
+        <button v-if="filterDateFrom || filterDateTo" class="clear" @click="clearDateRange">전체 기간</button>
       </div>
       <div class="field">
         <label>분류</label>
@@ -109,7 +120,7 @@ async function save() {
 
     <main class="main">
       <div class="toolbar">
-        <button @click="openAdd">추가</button>
+        <button class="primary" @click="openAdd">추가</button>
         <button :disabled="!selectedId" @click="openEdit">수정</button>
         <input
           type="text"
@@ -156,15 +167,17 @@ async function save() {
     <div v-if="showModal" class="modal-overlay" @click.self="closeModal">
       <div class="modal">
         <h3>{{ modalMode === 'add' ? '항목 추가' : '항목 수정' }}</h3>
-        <div class="modal-row">
-          <label>날짜</label>
-          <input type="date" v-model="draft.note_date" />
-        </div>
-        <div class="modal-row">
-          <label>분류</label>
-          <select v-model="draft.category">
-            <option v-for="c in CATEGORIES" :key="c" :value="c">{{ c }}</option>
-          </select>
+        <div class="modal-grid">
+          <div class="modal-row">
+            <label>날짜</label>
+            <input type="date" v-model="draft.note_date" />
+          </div>
+          <div class="modal-row">
+            <label>분류</label>
+            <select v-model="draft.category">
+              <option v-for="c in CATEGORIES" :key="c" :value="c">{{ c }}</option>
+            </select>
+          </div>
         </div>
         <div class="modal-row">
           <label>제목</label>
@@ -179,8 +192,8 @@ async function save() {
           <textarea v-model="draft.resolution_content" placeholder="처리사항을 입력하세요."></textarea>
         </div>
         <div class="modal-actions">
-          <button @click="save">저장</button>
           <button @click="closeModal">취소</button>
+          <button class="primary" @click="save">저장</button>
         </div>
       </div>
     </div>
@@ -191,38 +204,57 @@ async function save() {
 .board {
   display: flex;
   height: 100%;
-  font-family: -apple-system, 'Malgun Gothic', sans-serif;
 }
 
 .side {
-  width: 200px;
+  width: 220px;
   flex-shrink: 0;
-  padding: 16px;
-  border-right: 1px solid #ddd;
+  padding: 20px 16px;
+  background: var(--color-surface);
+  border-right: 1px solid var(--color-border);
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 20px;
 }
 
 .field {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
 }
 
 .field label {
   font-size: 12px;
-  color: #666;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
 }
 
-.field select,
-.field input {
+.range-inputs {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.range-inputs input {
+  flex: 1;
+  min-width: 0;
   padding: 6px 8px;
+}
+
+.range-sep {
+  color: var(--color-text-muted);
+  font-size: 12px;
+}
+
+.field select {
+  padding: 7px 8px;
 }
 
 .clear {
   font-size: 12px;
-  padding: 2px 6px;
+  padding: 4px 10px;
   align-self: flex-start;
 }
 
@@ -234,68 +266,95 @@ async function save() {
 }
 
 .toolbar {
-  padding: 10px 16px;
-  border-bottom: 1px solid #ddd;
+  padding: 12px 20px;
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
   display: flex;
+  align-items: center;
   gap: 8px;
-}
-
-.toolbar button {
-  padding: 6px 14px;
-  cursor: pointer;
 }
 
 .search-input {
   margin-left: auto;
-  padding: 6px 8px;
-  width: 220px;
+  width: 240px;
 }
 
 .grid {
   flex: 1;
   overflow-y: auto;
+  padding: 16px 20px;
 }
 
 table {
   width: 100%;
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 0;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
 }
 
 th, td {
-  padding: 8px 10px;
-  border-bottom: 1px solid #eee;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--color-border);
+  border-right: 1px solid var(--color-border);
   text-align: left;
   font-size: 14px;
   vertical-align: top;
 }
 
+th:last-child, td:last-child {
+  border-right: none;
+}
+
+th {
+  background: #fafbfc;
+  color: var(--color-text-muted);
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+tbody tr:last-child td {
+  border-bottom: none;
+}
+
 .col-date { width: 110px; }
 .col-cat { width: 90px; }
-.col-title { width: 160px; }
+.col-title { width: 180px; }
 
 .content-cell {
   white-space: pre-line;
-  line-height: 1.4;
+  line-height: 1.5;
+  color: var(--color-text);
 }
 
 tbody tr {
   cursor: pointer;
+  transition: background 0.1s ease;
+}
+
+tbody tr:hover {
+  background: #f7f9fc;
 }
 
 tbody tr.selected {
-  background: #eef6ff;
+  background: var(--color-primary-soft);
 }
 
 .empty {
   text-align: center;
-  color: #999;
-  padding: 24px;
+  color: var(--color-text-muted);
+  padding: 32px;
 }
 
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.4);
+  background: rgba(15, 20, 30, 0.45);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -303,46 +362,47 @@ tbody tr.selected {
 }
 
 .modal {
-  background: #fff;
+  background: var(--color-surface);
   width: 720px;
   max-width: 95vw;
   max-height: 92vh;
   overflow-y: auto;
-  padding: 24px;
-  border-radius: 8px;
+  padding: 28px;
+  border-radius: 12px;
+  box-shadow: var(--shadow-md);
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 16px;
 }
 
 .modal h3 {
-  margin: 0 0 4px;
+  margin: 0;
+  font-size: 18px;
+}
+
+.modal-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
 }
 
 .modal-row {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
 }
 
 .modal-row label {
   font-size: 12px;
-  color: #666;
-}
-
-.modal-row input,
-.modal-row select {
-  padding: 6px 8px;
-  box-sizing: border-box;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
 }
 
 .modal-row textarea {
   min-height: 80px;
-  padding: 8px;
-  font-family: inherit;
-  font-size: 14px;
   resize: vertical;
-  box-sizing: border-box;
 }
 
 .content-row textarea {
@@ -356,10 +416,7 @@ tbody tr.selected {
   justify-content: flex-end;
   gap: 8px;
   margin-top: 4px;
-}
-
-.modal-actions button {
-  padding: 6px 16px;
-  cursor: pointer;
+  padding-top: 16px;
+  border-top: 1px solid var(--color-border);
 }
 </style>

@@ -5,7 +5,7 @@ export function useNotes() {
   const notes = ref([])
   const loading = ref(false)
 
-  async function fetchList({ date, category, keyword }) {
+  async function fetchList({ dateFrom, dateTo, category, keyword }) {
     loading.value = true
     let query = supabase
       .from('ts_notes')
@@ -13,7 +13,8 @@ export function useNotes() {
       .order('note_date', { ascending: false })
       .order('created_at', { ascending: false })
 
-    if (date) query = query.eq('note_date', date)
+    if (dateFrom) query = query.gte('note_date', dateFrom)
+    if (dateTo) query = query.lte('note_date', dateTo)
     if (category) query = query.eq('category', category)
     if (keyword) {
       const like = `%${keyword.replace(/[%,()]/g, ' ')}%`
