@@ -108,11 +108,9 @@ async function save() {
     <aside class="side">
       <div class="field">
         <label>기간</label>
-        <div class="range-inputs">
-          <input type="date" v-model="filterDateFrom" />
-          <span class="range-sep">~</span>
-          <input type="date" v-model="filterDateTo" />
-        </div>
+        <input type="date" v-model="filterDateFrom" class="date-full" />
+        <span class="range-sep">~</span>
+        <input type="date" v-model="filterDateTo" class="date-full" />
         <button v-if="filterDateFrom || filterDateTo" class="clear" @click="clearDateRange">전체 기간</button>
       </div>
       <div class="field">
@@ -126,8 +124,6 @@ async function save() {
 
     <main class="main">
       <div class="toolbar">
-        <button class="primary" @click="openAdd">추가</button>
-        <button :disabled="!selectedId" @click="openEdit">수정</button>
         <input
           type="text"
           class="search-input"
@@ -136,6 +132,10 @@ async function save() {
           @keyup.enter="reload"
         />
         <button @click="reload">검색</button>
+        <div class="toolbar-actions">
+          <button class="primary" @click="openAdd">추가</button>
+          <button :disabled="!selectedId" @click="openEdit">수정</button>
+        </div>
       </div>
 
       <div class="grid">
@@ -237,21 +237,15 @@ async function save() {
   letter-spacing: 0.03em;
 }
 
-.range-inputs {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.range-inputs input {
-  flex: 1;
-  min-width: 0;
+.date-full {
+  width: 100%;
   padding: 6px 8px;
 }
 
 .range-sep {
   color: var(--color-text-muted);
   font-size: 12px;
+  text-align: center;
 }
 
 .field select {
@@ -281,8 +275,13 @@ async function save() {
 }
 
 .search-input {
-  margin-left: auto;
   width: 240px;
+}
+
+.toolbar-actions {
+  margin-left: auto;
+  display: flex;
+  gap: 8px;
 }
 
 .grid {
