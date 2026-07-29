@@ -6,8 +6,18 @@ const CATEGORIES = ['MES', 'SPC', 'REPORT']
 
 const { notes, loading, fetchList, insertNote, updateNote } = useNotes()
 
-const filterDateFrom = ref('')   // '' = 제한 없음
-const filterDateTo = ref('')     // '' = 제한 없음
+function todayStr() {
+  return new Date().toISOString().slice(0, 10)
+}
+
+function oneMonthAgoStr() {
+  const d = new Date()
+  d.setMonth(d.getMonth() - 1)
+  return d.toISOString().slice(0, 10)
+}
+
+const filterDateFrom = ref(oneMonthAgoStr())   // 기본: 한 달 전
+const filterDateTo = ref(todayStr())           // 기본: 오늘
 const filterCategory = ref('')   // '' = 전체
 const searchKeyword = ref('')
 
@@ -17,10 +27,6 @@ const selectedNote = computed(() => notes.value.find(n => n.id === selectedId.va
 const showModal = ref(false)
 const modalMode = ref('add')     // 'add' | 'edit'
 const draft = ref({ note_date: '', category: 'MES', title: '', request_content: '', resolution_content: '' })
-
-function todayStr() {
-  return new Date().toISOString().slice(0, 10)
-}
 
 async function reload() {
   await fetchList({
