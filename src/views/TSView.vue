@@ -8,6 +8,7 @@ const { notes, loading, fetchList, insertNote, updateNote } = useNotes()
 
 const filterDate = ref('')       // '' = 전체
 const filterCategory = ref('')   // '' = 전체
+const searchKeyword = ref('')
 
 const mode = ref('view')         // 'view' | 'add' | 'edit'
 const selectedId = ref(null)
@@ -18,7 +19,11 @@ function todayStr() {
 }
 
 async function reload() {
-  await fetchList({ date: filterDate.value || null, category: filterCategory.value || null })
+  await fetchList({
+    date: filterDate.value || null,
+    category: filterCategory.value || null,
+    keyword: searchKeyword.value.trim() || null
+  })
 }
 
 onMounted(reload)
@@ -119,6 +124,15 @@ async function save() {
         <button v-if="mode === 'view'" :disabled="!selectedId" @click="startEdit">수정</button>
         <button v-if="mode !== 'view'" @click="save">저장</button>
         <button v-if="mode !== 'view'" @click="cancelEdit">취소</button>
+        <input
+          type="text"
+          class="search-input"
+          v-model="searchKeyword"
+          :disabled="mode !== 'view'"
+          placeholder="제목·내용 검색"
+          @keyup.enter="reload"
+        />
+        <button :disabled="mode !== 'view'" @click="reload">검색</button>
       </div>
 
       <div class="grid">
@@ -246,6 +260,12 @@ async function save() {
 .toolbar button {
   padding: 6px 14px;
   cursor: pointer;
+}
+
+.search-input {
+  margin-left: auto;
+  padding: 6px 8px;
+  width: 220px;
 }
 
 .grid {
