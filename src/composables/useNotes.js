@@ -45,5 +45,13 @@ export function useNotes() {
     if (error) throw error
   }
 
-  return { notes, loading, fetchList, insertNote, updateNote }
+  async function deleteNote(id) {
+    const { error } = await supabase
+      .from('ts_notes')
+      .delete()
+      .eq('id', id)
+    if (error) throw error
+  }
+
+  return { notes, loading, fetchList, insertNote, updateNote, deleteNote }
 }

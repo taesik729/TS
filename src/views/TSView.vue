@@ -4,7 +4,7 @@ import { useNotes } from '../composables/useNotes'
 
 const CATEGORIES = ['MES', 'SPC', 'REPORT']
 
-const { notes, loading, fetchList, insertNote, updateNote } = useNotes()
+const { notes, loading, fetchList, insertNote, updateNote, deleteNote } = useNotes()
 
 function todayStr() {
   return new Date().toISOString().slice(0, 10)
@@ -100,6 +100,15 @@ async function save() {
     await reload()
   }
   showModal.value = false
+}
+
+async function handleDelete() {
+  if (!selectedId.value) return
+  if (!confirm('이 항목을 삭제할까요?')) return
+  await deleteNote(selectedId.value)
+  selectedId.value = null
+  showModal.value = false
+  await reload()
 }
 </script>
 
@@ -198,8 +207,11 @@ async function save() {
           <textarea v-model="draft.resolution_content" placeholder="처리사항을 입력하세요."></textarea>
         </div>
         <div class="modal-actions">
-          <button @click="closeModal">취소</button>
-          <button class="primary" @click="save">저장</button>
+          <button v-if="modalMode === 'edit'" class="danger" @click="handleDelete">삭제</button>
+          <div class="modal-actions-right">
+            <button @click="closeModal">취소</button>
+            <button class="primary" @click="save">저장</button>
+          </div>
         </div>
       </div>
     </div>
@@ -330,7 +342,7 @@ tbody tr:last-child td {
 
 .col-date { width: 110px; }
 .col-cat { width: 90px; }
-.col-title { width: 180px; }
+.col-title { width: 280px; }
 
 .content-cell {
   white-space: pre-line;
@@ -424,10 +436,27 @@ tbody tr.selected {
 
 .modal-actions {
   display: flex;
-  justify-content: flex-end;
+  align-items: center;
+  justify-content: space-between;
   gap: 8px;
   margin-top: 4px;
   padding-top: 16px;
   border-top: 1px solid var(--color-border);
+}
+
+.modal-actions-right {
+  display: flex;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.danger {
+  color: #dc2626;
+  border-color: #dc2626;
+  background: none;
+}
+
+.danger:hover {
+  background: #fef2f2;
 }
 </style>
