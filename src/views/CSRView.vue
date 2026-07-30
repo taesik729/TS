@@ -33,7 +33,6 @@ function emptyDraft() {
     due_date: '',
     priority: '보통',
     progress: 0,
-    author: '태식',
     content: ''
   }
 }
@@ -122,7 +121,6 @@ async function openTask(task) {
     due_date: task.due_date || '',
     priority: task.priority,
     progress: task.progress,
-    author: task.author || '',
     content: task.content || ''
   }
   editor.value.commands.setContent(task.content || '')
@@ -221,7 +219,6 @@ function fmt(dt) {
               <th class="col-date">마감일</th>
               <th class="col-priority">우선순위</th>
               <th class="col-progress">진척도</th>
-              <th class="col-assignee">작성자</th>
               <th class="col-datetime">등록일</th>
               <th class="col-datetime">수정일</th>
               <th class="col-no">업무번호</th>
@@ -236,13 +233,12 @@ function fmt(dt) {
               <td>{{ task.due_date }}</td>
               <td>{{ task.priority }}</td>
               <td>{{ task.progress }}%</td>
-              <td>{{ task.author }}</td>
               <td>{{ fmt(task.created_at) }}</td>
               <td>{{ fmt(task.updated_at) }}</td>
               <td>{{ task.task_no }}</td>
             </tr>
             <tr v-if="!loading && tasks.length === 0">
-              <td colspan="11" class="empty">항목이 없습니다.</td>
+              <td colspan="10" class="empty">항목이 없습니다.</td>
             </tr>
           </tbody>
         </table>
@@ -288,10 +284,6 @@ function fmt(dt) {
             <div class="meta-row">
               <label>진척도</label>
               <input type="number" min="0" max="100" v-model="draft.progress" />
-            </div>
-            <div class="meta-row">
-              <label>작성자</label>
-              <input type="text" v-model="draft.author" />
             </div>
           </div>
 
@@ -437,7 +429,7 @@ function fmt(dt) {
 
 table {
   width: 100%;
-  min-width: 1100px;
+  min-width: 1000px;
   border-collapse: separate;
   border-spacing: 0;
   background: var(--color-surface);
