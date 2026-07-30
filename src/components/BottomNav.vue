@@ -31,7 +31,7 @@ const items = [
 <style scoped>
 .bottom-nav {
   flex-shrink: 0;
-  height: 64px;
+  height: 72px;
   display: flex;
   border-top: 1px solid var(--color-border);
   background: var(--color-surface);
@@ -58,12 +58,12 @@ const items = [
 }
 
 .nav-item .icon {
-  font-size: 18px;
+  font-size: 22px;
   line-height: 1;
 }
 
 .nav-item .label {
-  font-size: 11px;
+  font-size: 14px;
   font-weight: 500;
 }
 
