@@ -70,11 +70,20 @@ export function useComments() {
     comments.value.push(data)
   }
 
+  async function deleteComment(id) {
+    const { error } = await supabase
+      .from('csr_comments')
+      .delete()
+      .eq('id', id)
+    if (error) throw error
+    comments.value = comments.value.filter(c => c.id !== id)
+  }
+
   function clearComments() {
     comments.value = []
   }
 
-  return { comments, fetchComments, addComment, clearComments }
+  return { comments, fetchComments, addComment, deleteComment, clearComments }
 }
 
 export async function uploadCSRImage(file) {

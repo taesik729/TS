@@ -9,7 +9,7 @@ const STATUS_OPTIONS = ['진행', '완료']
 const PRIORITY_OPTIONS = ['낮음', '보통', '높음']
 
 const { tasks, loading, fetchList, insertTask, updateTask } = useCSRTasks()
-const { comments, fetchComments, addComment, clearComments } = useComments()
+const { comments, fetchComments, addComment, deleteComment, clearComments } = useComments()
 
 const filterStatus = ref('')
 const filterDateFrom = ref('')
@@ -155,6 +155,11 @@ async function handleAddComment() {
   newComment.value = ''
 }
 
+async function handleDeleteComment(id) {
+  if (!confirm('댓글을 삭제할까요?')) return
+  await deleteComment(id)
+}
+
 function fmt(dt) {
   if (!dt) return ''
   return dt.slice(0, 16).replace('T', ' ')
@@ -288,7 +293,10 @@ function fmt(dt) {
             <div v-if="editingId">
               <div class="comment-list">
                 <div v-for="c in comments" :key="c.id" class="comment-item">
-                  <div class="comment-date">{{ fmt(c.created_at) }}</div>
+                  <div class="comment-item-header">
+                    <span class="comment-date">{{ fmt(c.created_at) }}</span>
+                    <button type="button" class="comment-delete" @click="handleDeleteComment(c.id)">삭제</button>
+                  </div>
                   <div class="comment-content">{{ c.content }}</div>
                 </div>
               </div>
@@ -549,14 +557,28 @@ tbody tr:hover {
 
 .meta-row {
   display: flex;
-  flex-direction: column;
-  gap: 4px;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
 }
 
 .meta-row label {
-  font-size: 12px;
+  flex-shrink: 0;
+  width: 64px;
+  font-size: 13px;
   font-weight: 600;
   color: var(--color-text-muted);
+}
+
+.meta-row label::after {
+  content: ':';
+  margin-left: 2px;
+}
+
+.meta-row input,
+.meta-row select {
+  flex: 1;
+  min-width: 0;
 }
 
 .editor-section {
@@ -580,11 +602,11 @@ tbody tr:hover {
 
 .editor-content {
   padding: 12px;
-  min-height: 420px;
+  min-height: 600px;
 }
 
 .editor-content :deep(.ProseMirror) {
-  min-height: 400px;
+  min-height: 580px;
   outline: none;
 }
 
@@ -636,10 +658,29 @@ tbody tr:hover {
   padding: 8px 10px;
 }
 
+.comment-item-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
 .comment-date {
   font-size: 11px;
   color: var(--color-text-muted);
-  margin-bottom: 4px;
+}
+
+.comment-delete {
+  border: none;
+  background: none;
+  padding: 0 2px;
+  font-size: 11px;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.comment-delete:hover {
+  color: #dc2626;
 }
 
 .comment-content {
