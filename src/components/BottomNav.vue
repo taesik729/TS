@@ -8,8 +8,8 @@ const items = [
   { path: '/settings', label: '기준정보', icon: '⚙️' },
   { path: '/csr', label: 'CSR', icon: '🗂️' },
   { path: '/ts', label: 'TS', icon: '🛠️' },
-  { path: '/work', label: '업무파악', icon: '📋' },
-  { path: '/study', label: '공부', icon: '📚' }
+  { path: '/work', label: '업무일지', icon: '📋' },
+  { path: '/study', label: '개발공부', icon: '📚' }
 ]
 </script>
 

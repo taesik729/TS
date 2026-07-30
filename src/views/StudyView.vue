@@ -2,7 +2,7 @@
   <div class="board">
     <aside class="side"></aside>
     <main class="main">
-      <p class="placeholder">공부 — 준비중</p>
+      <p class="placeholder">개발공부 — 준비중</p>
     </main>
   </div>
 </template>
