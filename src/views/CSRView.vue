@@ -289,7 +289,6 @@ function fmt(dt) {
           </div>
 
           <div class="comments-section">
-            <label>댓글</label>
             <template v-if="editingId">
               <div class="comment-list">
                 <div v-for="c in comments" :key="c.id" class="comment-item">
@@ -628,17 +627,6 @@ tbody tr:hover {
   display: flex;
   flex-direction: column;
   gap: 10px;
-}
-
-.comments-section label {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--color-text-muted);
-}
-
-.comments-section label::after {
-  content: ':';
-  margin-left: 2px;
 }
 
 .hint {
