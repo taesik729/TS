@@ -16,18 +16,22 @@
 
 ## 기술 스택
 
-Vue 3 (`<script setup>`) + Vite + Supabase(JS client) + vue-router. 전역 스타일은 `src/style.css`(CSS 변수로 색상·버튼·입력창 톤 통일, main.js에서 import) — 새 화면 만들 때 이 변수(`--color-*`) 재사용할 것.
+Vue 3 (`<script setup>`) + Vite + Supabase(JS client) + vue-router + TipTap(`@tiptap/vue-3`, `@tiptap/starter-kit`, `@tiptap/extension-image` — CSR 리치텍스트 에디터용). 전역 스타일은 `src/style.css`(CSS 변수로 색상·버튼·입력창 톤 통일, main.js에서 import) — 새 화면 만들 때 이 변수(`--color-*`) 재사용할 것.
 
 ---
 
 ## Supabase
 
 - **태식팜(FRONTEND) 프로젝트와 동일한 Supabase 인스턴스를 재사용** (별도 프로젝트 아님)
-- 이 앱 전용 테이블: `ts_notes` (RLS 비활성화 — 개인용 도구라 로그인 없이 anon key로 직접 CRUD)
-- 마이그레이션: `src/supabase/migrations/001_init.sql`, `002_split_content.sql`
+- 이 앱 전용 테이블: `ts_notes`, `csr_tasks`, `csr_subtasks`, `csr_comments` (모두 RLS 비활성화 — 개인용 도구라 로그인 없이 anon key로 직접 CRUD)
+- Storage 버킷: `csr-attachments` (공개 읽기/쓰기 — CSR 본문에 삽입되는 이미지 업로드용)
+- 마이그레이션: `src/supabase/migrations/001_init.sql`, `002_split_content.sql`, `003_csr.sql`
 
 ```sql
 ts_notes: id, note_date(date), category(MES|SPC|REPORT), title, request_content, resolution_content, created_at, updated_at
+csr_tasks: id, task_no(자동증가), title, status(진행|완료), assignee, start_date, due_date, priority(낮음|보통|높음), progress(0~100), author, content(리치텍스트 HTML), created_at, updated_at
+csr_subtasks: id, task_id(FK), title, done, created_at
+csr_comments: id, task_id(FK), content, created_at
 ```
 
 ---
@@ -43,14 +47,15 @@ src/
 ├── views/
 │   ├── TSView.vue           # TS(트러블슈팅) 화면 — 필터+그리드+상세 모두 포함, 컴포넌트 분리 안 함
 │   ├── SettingsView.vue     # 기준정보 — 준비중 placeholder
-│   ├── CSRView.vue          # CSR — 준비중 placeholder
-│   ├── WorkView.vue         # 업무파악 — 준비중 placeholder
-│   └── StudyView.vue        # 공부 — 준비중 placeholder
+│   ├── CSRView.vue          # CSR 업무 관리 — 그리드 + 우측 슬라이드 작성/상세 패널
+│   ├── WorkView.vue         # 업무일지 — 준비중 placeholder
+│   └── StudyView.vue        # 개발공부 — 준비중 placeholder
 ├── composables/
-│   └── useNotes.js          # Supabase CRUD (fetchList/insertNote/updateNote)
+│   ├── useNotes.js          # TS Supabase CRUD (fetchList/insertNote/updateNote)
+│   └── useCSR.js            # CSR Supabase CRUD (useCSRTasks/useSubtasks/useComments/uploadCSRImage)
 └── supabase/
     ├── client.js
-    └── migrations/001_init.sql
+    └── migrations/001_init.sql, 002_split_content.sql, 003_csr.sql
 ```
 
 ---
@@ -59,7 +64,7 @@ src/
 
 - 5탭: **기준정보 / CSR / TS / 업무일지 / 개발공부** ("TS" = Troubleshooting 약자, "기준정보"는 예전 "환경설정", "업무일지"는 예전 "업무파악", "개발공부"는 예전 "공부"에서 이름 변경)
 - 각 탭은 좌측 사이드(aside) + 우측 메인 영역 레이아웃을 공유 — 좌측에는 탭마다 다른 콤보/텍스트가 들어갈 수 있음 (TS는 기간·분류 필터, 나머지는 아직 미정)
-- 기준정보/CSR/업무일지/개발공부는 아직 내용 미정 — 향후 설계 후 구현 예정
+- 기준정보/업무일지/개발공부는 아직 내용 미정 — 향후 설계 후 구현 예정
 
 ## TS 탭 화면 동작
 
@@ -70,7 +75,14 @@ src/
 - 모달의 저장 버튼 하나로 (날짜·분류·제목) + (요청사항·처리사항)을 한 번에 insert/update
 - 검색은 제목 + 요청사항 + 처리사항 내용까지 포함해서 검색 (날짜·분류 필터와 조합 가능)
 
----
+## CSR 탭 화면 동작
+
+- 회사 업무 관리 도구(Dooray류)를 참고해서 구현한 업무 트래커. 좌측 기간·상태 필터 + 상단 검색/추가 + 그리드(11컬럼: 업무명/상태/담당자/시작일/마감일/우선순위/진척도/작성자/등록일/수정일/업무번호)
+- **행 클릭 또는 "추가" 클릭 → 화면 우측에서 슬라이드로 열리는 패널**에서 작성/수정 (TS처럼 중앙 모달이 아니라 우측 패널 방식)
+  - 업무명, 상태(진행/완료), 담당자, 시작일/마감일, 우선순위(낮음/보통/높음), 진척도(0~100), 작성자
+  - 본문은 **요청사항/처리사항 구분 없이 하나의 리치텍스트(TipTap)** — 붙여넣기·드래그로 이미지 넣으면 `csr-attachments` Storage에 자동 업로드 후 본문에 바로 삽입됨
+  - **하위업무**(체크리스트)와 **댓글**은 업무를 먼저 저장(신규 생성)해야 추가 가능 — `task_id`가 있어야 하는 하위 테이블이라 저장 전에는 "저장 후 추가 가능" 안내만 표시
+- 상단 "저장" 버튼은 업무 메인 필드(제목~작성자, 본문)만 저장. 하위업무/댓글은 각자의 입력창에서 즉시 저장(별도 흐름)
 
 ## 개발 환경
 
