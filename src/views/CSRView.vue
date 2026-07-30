@@ -8,7 +8,7 @@ import { useCSRTasks, useComments, uploadCSRImage } from '../composables/useCSR'
 const STATUS_OPTIONS = ['진행', '완료']
 const PRIORITY_OPTIONS = ['낮음', '보통', '높음']
 
-const { tasks, loading, fetchList, insertTask, updateTask } = useCSRTasks()
+const { tasks, loading, fetchList, insertTask, updateTask, deleteTask } = useCSRTasks()
 const { comments, fetchComments, addComment, deleteComment, clearComments } = useComments()
 
 const filterStatus = ref('')
@@ -166,6 +166,14 @@ async function saveTask() {
     editingId.value = created.id
     editingTaskNo.value = created.task_no
   }
+  await reload()
+  closePanel()
+}
+
+async function handleDeleteTask() {
+  if (!editingId.value) return
+  if (!confirm('이 업무를 삭제할까요? 댓글도 함께 삭제됩니다.')) return
+  await deleteTask(editingId.value)
   await reload()
   closePanel()
 }
@@ -335,8 +343,11 @@ function fmt(dt) {
         </div>
 
         <div class="panel-footer">
-          <button @click="closePanel">닫기</button>
-          <button class="primary" @click="saveTask">저장</button>
+          <button v-if="editingId" class="danger" @click="handleDeleteTask">삭제</button>
+          <div class="panel-footer-right">
+            <button @click="closePanel">닫기</button>
+            <button class="primary" @click="saveTask">저장</button>
+          </div>
         </div>
       </div>
     </div>
@@ -711,9 +722,26 @@ tbody tr:hover {
 
 .panel-footer {
   display: flex;
-  justify-content: flex-end;
+  align-items: center;
+  justify-content: space-between;
   gap: 8px;
   padding: 14px 20px;
   border-top: 1px solid var(--color-border);
+}
+
+.panel-footer-right {
+  display: flex;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.danger {
+  color: #dc2626;
+  border-color: #dc2626;
+  background: none;
+}
+
+.danger:hover {
+  background: #fef2f2;
 }
 </style>

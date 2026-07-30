@@ -44,7 +44,15 @@ export function useCSRTasks() {
     if (error) throw error
   }
 
-  return { tasks, loading, fetchList, insertTask, updateTask }
+  async function deleteTask(id) {
+    const { error } = await supabase
+      .from('csr_tasks')
+      .delete()
+      .eq('id', id)
+    if (error) throw error
+  }
+
+  return { tasks, loading, fetchList, insertTask, updateTask, deleteTask }
 }
 
 export function useComments() {
