@@ -3,13 +3,12 @@ import { ref, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useEditor, EditorContent } from '@tiptap/vue-3'
 import StarterKit from '@tiptap/starter-kit'
 import Image from '@tiptap/extension-image'
-import { useCSRTasks, useSubtasks, useComments, uploadCSRImage } from '../composables/useCSR'
+import { useCSRTasks, useComments, uploadCSRImage } from '../composables/useCSR'
 
 const STATUS_OPTIONS = ['진행', '완료']
 const PRIORITY_OPTIONS = ['낮음', '보통', '높음']
 
 const { tasks, loading, fetchList, insertTask, updateTask } = useCSRTasks()
-const { subtasks, fetchSubtasks, addSubtask, toggleSubtask, clearSubtasks } = useSubtasks()
 const { comments, fetchComments, addComment, clearComments } = useComments()
 
 const filterStatus = ref('')
@@ -21,7 +20,6 @@ const showPanel = ref(false)
 const editingId = ref(null) // null = 신규 작성
 const editingTaskNo = ref(null)
 const draft = ref(emptyDraft())
-const newSubtaskTitle = ref('')
 const newComment = ref('')
 
 function emptyDraft() {
@@ -104,7 +102,6 @@ function openAdd() {
   editingId.value = null
   editingTaskNo.value = null
   draft.value = emptyDraft()
-  clearSubtasks()
   clearComments()
   editor.value.commands.setContent('')
   showPanel.value = true
@@ -125,7 +122,7 @@ async function openTask(task) {
   }
   editor.value.commands.setContent(task.content || '')
   showPanel.value = true
-  await Promise.all([fetchSubtasks(task.id), fetchComments(task.id)])
+  await fetchComments(task.id)
 }
 
 function closePanel() {
@@ -150,16 +147,6 @@ async function saveTask() {
     editingTaskNo.value = created.task_no
   }
   await reload()
-}
-
-async function handleAddSubtask() {
-  if (!newSubtaskTitle.value.trim() || !editingId.value) return
-  await addSubtask(editingId.value, newSubtaskTitle.value.trim())
-  newSubtaskTitle.value = ''
-}
-
-async function handleToggleSubtask(item) {
-  await toggleSubtask(item.id, !item.done)
 }
 
 async function handleAddComment() {
@@ -294,26 +281,6 @@ function fmt(dt) {
               <button type="button" @click="pickImageFile">🖼 이미지</button>
             </div>
             <EditorContent :editor="editor" class="editor-content" />
-          </div>
-
-          <div class="subtasks-section">
-            <label>하위업무</label>
-            <div v-if="editingId" class="subtask-list">
-              <label v-for="s in subtasks" :key="s.id" class="subtask-item">
-                <input type="checkbox" :checked="s.done" @change="handleToggleSubtask(s)" />
-                <span :class="{ done: s.done }">{{ s.title }}</span>
-              </label>
-              <div class="subtask-add">
-                <input
-                  type="text"
-                  v-model="newSubtaskTitle"
-                  placeholder="하위업무 추가"
-                  @keyup.enter="handleAddSubtask"
-                />
-                <button @click="handleAddSubtask">추가</button>
-              </div>
-            </div>
-            <p v-else class="hint">저장 후 하위업무를 추가할 수 있습니다.</p>
           </div>
 
           <div class="comments-section">
@@ -521,7 +488,7 @@ tbody tr:hover {
 }
 
 .panel {
-  width: 560px;
+  width: 820px;
   max-width: 95vw;
   height: 100%;
   background: var(--color-surface);
@@ -613,11 +580,11 @@ tbody tr:hover {
 
 .editor-content {
   padding: 12px;
-  min-height: 200px;
+  min-height: 420px;
 }
 
 .editor-content :deep(.ProseMirror) {
-  min-height: 180px;
+  min-height: 400px;
   outline: none;
 }
 
@@ -626,7 +593,7 @@ tbody tr:hover {
   border-radius: 4px;
 }
 
-.subtasks-section, .comments-section {
+.comments-section {
   border-top: 1px solid var(--color-border);
   padding-top: 16px;
   display: flex;
@@ -634,7 +601,7 @@ tbody tr:hover {
   gap: 10px;
 }
 
-.subtasks-section label, .comments-section label {
+.comments-section label {
   font-size: 12px;
   font-weight: 600;
   color: var(--color-text-muted);
@@ -645,30 +612,12 @@ tbody tr:hover {
   color: var(--color-text-muted);
 }
 
-.subtask-list {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.subtask-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 14px;
-}
-
-.subtask-item .done {
-  text-decoration: line-through;
-  color: var(--color-text-muted);
-}
-
-.subtask-add, .comment-add {
+.comment-add {
   display: flex;
   gap: 8px;
 }
 
-.subtask-add input, .comment-add input {
+.comment-add input {
   flex: 1;
 }
 
