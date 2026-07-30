@@ -246,51 +246,49 @@ function fmt(dt) {
         </div>
 
         <div class="panel-body">
-          <div class="panel-main">
-            <input type="text" class="title-input" v-model="draft.title" placeholder="제목을 입력하세요" />
+          <input type="text" class="title-input" v-model="draft.title" placeholder="제목을 입력하세요" />
 
-            <div class="meta-grid">
-              <div class="meta-row">
-                <label>상태</label>
-                <select v-model="draft.status">
-                  <option v-for="s in STATUS_OPTIONS" :key="s" :value="s">{{ s }}</option>
-                </select>
-              </div>
-              <div class="meta-row">
-                <label>담당자</label>
-                <input type="text" v-model="draft.assignee" placeholder="담당자 추가" />
-              </div>
-              <div class="meta-row">
-                <label>시작일</label>
-                <input type="date" v-model="draft.start_date" />
-              </div>
-              <div class="meta-row">
-                <label>마감일</label>
-                <input type="date" v-model="draft.due_date" />
-              </div>
-              <div class="meta-row">
-                <label>우선순위</label>
-                <select v-model="draft.priority">
-                  <option v-for="p in PRIORITY_OPTIONS" :key="p" :value="p">{{ p }}</option>
-                </select>
-              </div>
-              <div class="meta-row">
-                <label>진척도</label>
-                <input type="number" min="0" max="100" v-model="draft.progress" />
-              </div>
+          <div class="meta-grid">
+            <div class="meta-row">
+              <label>상태</label>
+              <select v-model="draft.status">
+                <option v-for="s in STATUS_OPTIONS" :key="s" :value="s">{{ s }}</option>
+              </select>
             </div>
-
-            <div class="editor-section">
-              <div class="editor-toolbar">
-                <button type="button" @click="editor.chain().focus().toggleBold().run()">B</button>
-                <button type="button" @click="editor.chain().focus().toggleBulletList().run()">목록</button>
-                <button type="button" @click="pickImageFile">🖼 이미지</button>
-              </div>
-              <EditorContent :editor="editor" class="editor-content" />
+            <div class="meta-row">
+              <label>담당자</label>
+              <input type="text" v-model="draft.assignee" placeholder="담당자 추가" />
+            </div>
+            <div class="meta-row">
+              <label>시작일</label>
+              <input type="date" v-model="draft.start_date" />
+            </div>
+            <div class="meta-row">
+              <label>마감일</label>
+              <input type="date" v-model="draft.due_date" />
+            </div>
+            <div class="meta-row">
+              <label>우선순위</label>
+              <select v-model="draft.priority">
+                <option v-for="p in PRIORITY_OPTIONS" :key="p" :value="p">{{ p }}</option>
+              </select>
+            </div>
+            <div class="meta-row">
+              <label>진척도</label>
+              <input type="number" min="0" max="100" v-model="draft.progress" />
             </div>
           </div>
 
-          <div class="panel-side">
+          <div class="editor-section">
+            <div class="editor-toolbar">
+              <button type="button" @click="editor.chain().focus().toggleBold().run()">B</button>
+              <button type="button" @click="editor.chain().focus().toggleBulletList().run()">목록</button>
+              <button type="button" @click="pickImageFile">🖼 이미지</button>
+            </div>
+            <EditorContent :editor="editor" class="editor-content" />
+          </div>
+
+          <div class="comments-section">
             <label>댓글</label>
             <template v-if="editingId">
               <div class="comment-list">
@@ -498,7 +496,7 @@ tbody tr:hover {
 }
 
 .panel {
-  width: 1120px;
+  width: 820px;
   max-width: 95vw;
   height: 100%;
   background: var(--color-surface);
@@ -531,34 +529,11 @@ tbody tr:hover {
 .panel-body {
   flex: 1;
   min-height: 0;
-  display: flex;
-  flex-direction: row;
-}
-
-.panel-main {
-  flex: 1;
-  min-width: 0;
   overflow-y: auto;
   padding: 20px;
   display: flex;
   flex-direction: column;
   gap: 20px;
-}
-
-.panel-side {
-  width: 320px;
-  flex-shrink: 0;
-  border-left: 1px solid var(--color-border);
-  padding: 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.panel-side label {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--color-text-muted);
 }
 
 .title-input {
@@ -647,6 +622,25 @@ tbody tr:hover {
   border-radius: 4px;
 }
 
+.comments-section {
+  border-top: 1px solid var(--color-border);
+  padding-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.comments-section label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.comments-section label::after {
+  content: ':';
+  margin-left: 2px;
+}
+
 .hint {
   font-size: 13px;
   color: var(--color-text-muted);
@@ -662,11 +656,10 @@ tbody tr:hover {
 }
 
 .comment-list {
-  flex: 1;
-  min-height: 0;
   display: flex;
   flex-direction: column;
   gap: 10px;
+  max-height: 220px;
   overflow-y: auto;
 }
 
