@@ -21,6 +21,7 @@ const editingId = ref(null) // null = 신규 작성
 const editingTaskNo = ref(null)
 const draft = ref(emptyDraft())
 const newComment = ref('')
+const pendingImages = new Map() // blobUrl -> File, 저장 시점에 Storage 업로드
 
 function emptyDraft() {
   return {
@@ -52,10 +53,24 @@ function clearDateRange() {
 onMounted(reload)
 watch([filterStatus, filterDateFrom, filterDateTo], reload)
 
-async function uploadAndInsertImage(file) {
+function insertPendingImage(file) {
   if (!file || !file.type.startsWith('image/')) return
-  const url = await uploadCSRImage(file)
-  editor.value.chain().focus().setImage({ src: url }).run()
+  const blobUrl = URL.createObjectURL(file)
+  pendingImages.set(blobUrl, file)
+  editor.value.chain().focus().setImage({ src: blobUrl }).run()
+}
+
+async function resolvePendingImages() {
+  if (pendingImages.size === 0) return
+  let html = editor.value.getHTML()
+  for (const [blobUrl, file] of pendingImages.entries()) {
+    const publicUrl = await uploadCSRImage(file)
+    html = html.split(blobUrl).join(publicUrl)
+    URL.revokeObjectURL(blobUrl)
+  }
+  pendingImages.clear()
+  editor.value.commands.setContent(html)
+  draft.value.content = html
 }
 
 const editor = useEditor({
@@ -66,7 +81,7 @@ const editor = useEditor({
       const item = Array.from(event.clipboardData?.items || []).find(i => i.type.startsWith('image/'))
       if (item) {
         event.preventDefault()
-        uploadAndInsertImage(item.getAsFile())
+        insertPendingImage(item.getAsFile())
         return true
       }
       return false
@@ -75,7 +90,7 @@ const editor = useEditor({
       const file = Array.from(event.dataTransfer?.files || []).find(f => f.type.startsWith('image/'))
       if (file) {
         event.preventDefault()
-        uploadAndInsertImage(file)
+        insertPendingImage(file)
         return true
       }
       return false
@@ -94,7 +109,7 @@ function pickImageFile() {
   const input = document.createElement('input')
   input.type = 'file'
   input.accept = 'image/*'
-  input.onchange = () => uploadAndInsertImage(input.files[0])
+  input.onchange = () => insertPendingImage(input.files[0])
   input.click()
 }
 
@@ -103,6 +118,7 @@ function openAdd() {
   editingTaskNo.value = null
   draft.value = emptyDraft()
   clearComments()
+  pendingImages.clear()
   editor.value.commands.setContent('')
   showPanel.value = true
 }
@@ -120,6 +136,7 @@ async function openTask(task) {
     progress: task.progress,
     content: task.content || ''
   }
+  pendingImages.clear()
   editor.value.commands.setContent(task.content || '')
   showPanel.value = true
   await fetchComments(task.id)
@@ -134,6 +151,9 @@ async function saveTask() {
     alert('업무명을 입력해주세요.')
     return
   }
+
+  await resolvePendingImages()
+
   const payload = { ...draft.value, progress: Number(draft.value.progress) || 0 }
   for (const key of ['start_date', 'due_date']) {
     if (!payload[key]) payload[key] = null
@@ -147,6 +167,7 @@ async function saveTask() {
     editingTaskNo.value = created.task_no
   }
   await reload()
+  closePanel()
 }
 
 async function handleAddComment() {
