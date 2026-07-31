@@ -7,32 +7,6 @@ export function useAnalysis() {
 
   async function fetchTree({ system, workType, dateFrom, dateTo, keyword }) {
     loading.value = true
-    let rootQuery = supabase
-      .from('analysis_items')
-      .select('id')
-      .is('parent_id', null)
-
-    if (system) rootQuery = rootQuery.eq('system', system)
-    if (workType) rootQuery = rootQuery.eq('work_type', workType)
-    if (dateFrom) rootQuery = rootQuery.gte('log_date', dateFrom)
-    if (dateTo) rootQuery = rootQuery.lte('log_date', dateTo)
-    if (keyword) {
-      const like = `%${keyword.replace(/[%,()]/g, ' ')}%`
-      rootQuery = rootQuery.ilike('title', like)
-    }
-
-    const { data: roots, error: rootError } = await rootQuery
-    if (rootError) {
-      loading.value = false
-      throw rootError
-    }
-
-    if (roots.length === 0) {
-      items.value = []
-      loading.value = false
-      return
-    }
-
     const { data: all, error } = await supabase
       .from('analysis_items')
       .select('*')
@@ -42,14 +16,42 @@ export function useAnalysis() {
     loading.value = false
     if (error) throw error
 
-    const rootIds = new Set(roots.map(r => r.id))
     const byId = new Map(all.map(item => [item.id, item]))
+
+    function getRoot(item) {
+      let cur = item
+      const seen = new Set()
+      while (cur.parent_id && byId.has(cur.parent_id) && !seen.has(cur.id)) {
+        seen.add(cur.id)
+        cur = byId.get(cur.parent_id)
+      }
+      return cur
+    }
+
+    const needle = keyword ? keyword.toLowerCase() : null
+    function matchesKeyword(item) {
+      if (!needle) return true
+      const title = (item.title || '').toLowerCase()
+      const content = (item.content || '').toLowerCase()
+      return title.includes(needle) || content.includes(needle)
+    }
+
+    const validRootIds = new Set()
+    all.forEach(item => {
+      if (!matchesKeyword(item)) return
+      const root = getRoot(item)
+      if (system && root.system !== system) return
+      if (workType && root.work_type !== workType) return
+      if (dateFrom && (!root.log_date || root.log_date < dateFrom)) return
+      if (dateTo && (!root.log_date || root.log_date > dateTo)) return
+      validRootIds.add(root.id)
+    })
 
     function isDescendantOfRoot(item) {
       let cur = item
       const seen = new Set()
       while (cur) {
-        if (rootIds.has(cur.id)) return true
+        if (validRootIds.has(cur.id)) return true
         if (seen.has(cur.id)) return false
         seen.add(cur.id)
         cur = cur.parent_id ? byId.get(cur.parent_id) : null
