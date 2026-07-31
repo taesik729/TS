@@ -23,14 +23,15 @@ Vue 3 (`<script setup>`) + Vite + Supabase(JS client) + vue-router + TipTap(`@ti
 ## Supabase
 
 - **태식팜(FRONTEND) 프로젝트와 동일한 Supabase 인스턴스를 재사용** (별도 프로젝트 아님)
-- 이 앱 전용 테이블: `ts_notes`, `csr_tasks`, `csr_comments` (모두 RLS 비활성화 — 개인용 도구라 로그인 없이 anon key로 직접 CRUD)
-- Storage 버킷: `csr-attachments` (공개 읽기/쓰기 — CSR 본문에 삽입되는 이미지 업로드용)
-- 마이그레이션: `src/supabase/migrations/001_init.sql`, `002_split_content.sql`, `003_csr.sql`, `004_csr_drop_author.sql`, `005_csr_drop_subtasks.sql`
+- 이 앱 전용 테이블: `ts_notes`, `csr_tasks`, `csr_comments`, `work_logs` (모두 RLS 비활성화 — 개인용 도구라 로그인 없이 anon key로 직접 CRUD)
+- Storage 버킷: `csr-attachments` (공개 읽기/쓰기 — CSR·업무일지 본문에 삽입되는 이미지 업로드용, 두 화면이 같은 버킷 공유)
+- 마이그레이션: `src/supabase/migrations/001_init.sql` ~ `006_work_logs.sql`
 
 ```sql
 ts_notes: id, note_date(date), category(MES|SPC|REPORT), title, request_content, resolution_content, created_at, updated_at
 csr_tasks: id, task_no(자동증가), title, status(진행|완료), assignee, start_date, due_date, priority(낮음|보통|높음), progress(0~100), content(리치텍스트 HTML), created_at, updated_at
 csr_comments: id, task_id(FK), content, created_at
+work_logs: id, log_date(date, UNIQUE — 하루 1건), content(리치텍스트 HTML), created_at, updated_at
 ```
 
 ---
@@ -47,14 +48,15 @@ src/
 │   ├── TSView.vue           # TS(트러블슈팅) 화면 — 필터+그리드+상세 모두 포함, 컴포넌트 분리 안 함
 │   ├── SettingsView.vue     # 기준정보 — 준비중 placeholder
 │   ├── CSRView.vue          # CSR 업무 관리 — 그리드 + 우측 슬라이드 작성/상세 패널
-│   ├── WorkView.vue         # 업무일지 — 준비중 placeholder
+│   ├── WorkView.vue         # 업무일지 — 달력 뷰 + 우측 슬라이드 작성 패널
 │   └── StudyView.vue        # 개발공부 — 준비중 placeholder
 ├── composables/
-│   ├── useNotes.js          # TS Supabase CRUD (fetchList/insertNote/updateNote)
-│   └── useCSR.js            # CSR Supabase CRUD (useCSRTasks/useComments/uploadCSRImage)
+│   ├── useNotes.js          # TS Supabase CRUD (fetchList/insertNote/updateNote/deleteNote)
+│   ├── useCSR.js            # CSR Supabase CRUD (useCSRTasks/useComments/uploadCSRImage) — uploadCSRImage는 업무일지도 재사용
+│   └── useWorkLogs.js       # 업무일지 Supabase CRUD (fetchMonth/fetchByDate/upsertLog/deleteLog)
 └── supabase/
     ├── client.js
-    └── migrations/001_init.sql ~ 005_csr_drop_subtasks.sql
+    └── migrations/001_init.sql ~ 006_work_logs.sql
 ```
 
 ---
@@ -62,8 +64,8 @@ src/
 ## 하단 네비게이션
 
 - 5탭: **기준정보 / CSR / TS / 업무일지 / 개발공부** ("TS" = Troubleshooting 약자, "기준정보"는 예전 "환경설정", "업무일지"는 예전 "업무파악", "개발공부"는 예전 "공부"에서 이름 변경)
-- 각 탭은 좌측 사이드(aside) + 우측 메인 영역 레이아웃을 공유 — 좌측에는 탭마다 다른 콤보/텍스트가 들어갈 수 있음 (TS는 기간·분류 필터, 나머지는 아직 미정)
-- 기준정보/업무일지/개발공부는 아직 내용 미정 — 향후 설계 후 구현 예정
+- 각 탭은 좌측 사이드(aside) + 우측 메인 영역 레이아웃을 공유 — 좌측에는 탭마다 다른 콤보/텍스트가 들어갈 수 있음 (TS는 기간·분류 필터, 업무일지는 달력이라 사이드 없이 전체 폭 사용, 나머지는 아직 미정)
+- 기준정보/개발공부는 아직 내용 미정 — 향후 설계 후 구현 예정
 
 ## TS 탭 화면 동작
 
@@ -86,6 +88,14 @@ src/
   - (참고) 댓글을 우측 별도 사이드 패널로 분리해본 적 있으나, 본문과의 여백이 과해 보여서 다시 하단 배치로 되돌림. 하위업무(체크리스트) 기능도 만들었다가 제거함 — 필요해지면 재설계
 - 상단 "저장" 버튼은 업무 메인 필드(제목~진척도, 본문·이미지 업로드 포함) 저장 후 **패널을 자동으로 닫음**. 댓글은 입력창에서 즉시 저장(별도 흐름, 패널 안 닫힘)
 - **패널 하단 좌측에 "삭제" 버튼** — 기존 업무 수정 시에만 표시(신규 작성 중엔 안 보임). 확인 후 `csr_tasks` 삭제, 댓글(`csr_comments`)은 FK `ON DELETE CASCADE`로 자동 함께 삭제(`useCSRTasks.deleteTask`)
+
+## 업무일지 탭 화면 동작
+
+- **좌측 사이드 없이 전체 화면이 월간 달력** — 상단에 ◀/▶ 월 이동 + "오늘" 버튼, 요일 헤더(일~토), 7열 그리드로 날짜 셀
+- 각 날짜 셀 우측 하단에 **점 표시**: `work_logs`에 그 날짜 기록이 있으면 초록(`#16a34a`), 없으면 빨강(`#dc2626`) — 조회월 범위 안의 모든 날짜(이전/다음달로 삐져나온 셀 포함)에 표시. 오늘 날짜는 파란 테두리(`--color-primary`)로 강조
+- **하루 1건 원칙** — 날짜 셀 클릭 시 CSR "추가" 팝업과 동일한 스타일(우측 슬라이드 패널, 820px, TipTap 리치텍스트)이 뜸. 이미 그 날짜에 기록이 있으면 기존 내용을 불러와 이어서 수정, 없으면 빈 채로 새로 작성(별도 제목/상태 필드 없이 본문만 있음 — CSR보다 단순한 구조)
+- 이미지도 CSR과 동일하게 **저장 시점에 지연 업로드** (`useCSR.uploadCSRImage` 재사용, `csr-attachments` 버킷 공유)
+- 저장(`useWorkLogs.upsertLog`, `log_date` UNIQUE 기준 upsert) / 삭제(`useWorkLogs.deleteLog`, 기존 기록 있을 때만 버튼 노출) 후 패널 자동 닫힘 + 해당 월 점 표시 갱신
 
 ## 개발 환경
 
