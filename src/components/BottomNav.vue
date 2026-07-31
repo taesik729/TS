@@ -9,7 +9,7 @@ const items = [
   { path: '/csr', label: 'CSR', icon: '🗂️' },
   { path: '/ts', label: 'TS', icon: '🛠️' },
   { path: '/work', label: '업무일지', icon: '📋' },
-  { path: '/study', label: '개발공부', icon: '📚' }
+  { path: '/study', label: '분석', icon: '📚' }
 ]
 </script>
 
