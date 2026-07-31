@@ -2,7 +2,7 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useNotes } from '../composables/useNotes'
 
-const CATEGORIES = ['MES', 'SPC', 'REPORT']
+const CATEGORIES = ['MES', 'SPC', 'MMD']
 
 const { notes, loading, fetchList, insertNote, updateNote, deleteNote } = useNotes()
 
