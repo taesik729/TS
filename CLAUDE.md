@@ -42,16 +42,15 @@ analysis_items: id, parent_id(자기참조 FK, 무제한 depth 트리), system(M
 ```
 src/
 ├── router/
-│   └── index.js            # /settings, /csr, /ts(기본), /work, /study
+│   └── index.js            # /csr, /ts(기본), /work, /study — /settings는 삭제됨
 ├── components/
-│   ├── BottomNav.vue        # 하단 5탭 (환경설정/CSR/TS/업무일지/분석)
+│   ├── BottomNav.vue        # 하단 4탭 (CSR/TS/업무일지/설정&분석)
 │   └── AnalysisTreeNode.vue # 분석 트리용 재귀 컴포넌트 (SFC 자기 자신을 재귀 참조)
 ├── views/
 │   ├── TSView.vue           # TS(트러블슈팅) 화면 — 필터+그리드+상세 모두 포함, 컴포넌트 분리 안 함
-│   ├── SettingsView.vue     # 환경설정 — 준비중 placeholder
 │   ├── CSRView.vue          # CSR 업무 관리 — 그리드 + 우측 슬라이드 작성/상세 패널
 │   ├── WorkView.vue         # 업무일지 — 달력 뷰 + 우측 슬라이드 작성 패널
-│   └── StudyView.vue        # 분석 — 상단 필터바 + 좌측 트리 + 우측 인라인 편집 (라우트/파일명은 그대로 study지만 라벨은 "분석")
+│   └── StudyView.vue        # 설정&분석 — 상단 필터바 + 좌측 트리 + 우측 인라인 편집 (라우트/파일명은 그대로 study)
 ├── composables/
 │   ├── useNotes.js          # TS Supabase CRUD (fetchList/insertNote/updateNote/deleteNote)
 │   ├── useCSR.js            # CSR Supabase CRUD (useCSRTasks/useComments/uploadCSRImage) — uploadCSRImage는 업무일지·분석도 재사용
@@ -66,9 +65,8 @@ src/
 
 ## 하단 네비게이션
 
-- 5탭: **환경설정 / CSR / TS / 업무일지 / 분석** ("TS" = Troubleshooting 약자, "환경설정"은 한때 "기준정보"로 바꿨다가 다시 "환경설정"으로 복귀, "업무일지"는 예전 "업무파악", "분석"은 예전 "공부"→"개발공부"에서 이름 변경)
-- 각 탭은 좌측 사이드(aside) + 우측 메인 영역 레이아웃을 공유 — 좌측에는 탭마다 다른 콤보/텍스트가 들어갈 수 있음 (TS는 기간·분류 필터, 업무일지는 달력이라 사이드 없이 전체 폭 사용, 나머지는 아직 미정)
-- 환경설정은 아직 내용 미정 — 향후 설계 후 구현 예정
+- 4탭: **CSR / TS / 업무일지 / 설정&분석** ("TS" = Troubleshooting 약자, "업무일지"는 예전 "업무파악", "설정&분석"은 "환경설정"(기준정보로 바꿨다가 복귀)과 "분석"(공부→개발공부→분석) 두 탭을 하나로 합친 것 — 환경설정 탭은 내용이 없어서 삭제하고 라벨만 분석 탭에 병기)
+- 각 탭은 좌측 사이드(aside) + 우측 메인 영역 레이아웃을 공유 — 좌측에는 탭마다 다른 콤보/텍스트가 들어갈 수 있음 (TS는 기간·분류 필터, 업무일지는 달력이라 사이드 없이 전체 폭 사용, 분석은 상단 바 + 좌측 트리)
 
 ## TS 탭 화면 동작
 
