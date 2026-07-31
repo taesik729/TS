@@ -6,7 +6,7 @@
 
 ## 프로젝트 개요
 
-- OneNote로 관리하던 MES/SPC/REPORT 업무 지식(EVENT NAME, 용어 등)을 대체하는 개인용 노트 관리 웹앱
+- OneNote로 관리하던 MES/SPC/MMD 업무 지식(EVENT NAME, 용어 등)을 대체하는 개인용 노트 관리 웹앱
 - **운영 URL**: https://ts-liart.vercel.app
 - **GitHub**: https://github.com/taesik729/TS (Private)
 - **배포**: GitHub main 브랜치 push → Vercel(taesik-farm 팀, 프로젝트명 `ts`) 자동 배포
@@ -25,10 +25,10 @@ Vue 3 (`<script setup>`) + Vite + Supabase(JS client) + vue-router + TipTap(`@ti
 - **태식팜(FRONTEND) 프로젝트와 동일한 Supabase 인스턴스를 재사용** (별도 프로젝트 아님)
 - 이 앱 전용 테이블: `ts_notes`, `csr_tasks`, `csr_comments`, `work_logs` (모두 RLS 비활성화 — 개인용 도구라 로그인 없이 anon key로 직접 CRUD)
 - Storage 버킷: `csr-attachments` (공개 읽기/쓰기 — CSR·업무일지 본문에 삽입되는 이미지 업로드용, 두 화면이 같은 버킷 공유)
-- 마이그레이션: `src/supabase/migrations/001_init.sql` ~ `006_work_logs.sql`
+- 마이그레이션: `src/supabase/migrations/001_init.sql` ~ `007_ts_category_mmd.sql`
 
 ```sql
-ts_notes: id, note_date(date), category(MES|SPC|REPORT), title, request_content, resolution_content, created_at, updated_at
+ts_notes: id, note_date(date), category(MES|SPC|MMD), title, request_content, resolution_content, created_at, updated_at
 csr_tasks: id, task_no(자동증가), title, status(진행|완료), assignee, start_date, due_date, priority(낮음|보통|높음), progress(0~100), content(리치텍스트 HTML), created_at, updated_at
 csr_comments: id, task_id(FK), content, created_at
 work_logs: id, log_date(date, UNIQUE — 하루 1건), content(리치텍스트 HTML), created_at, updated_at
