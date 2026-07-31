@@ -2,7 +2,7 @@
   <div class="board">
     <aside class="side"></aside>
     <main class="main">
-      <p class="placeholder">기준정보 — 준비중</p>
+      <p class="placeholder">환경설정 — 준비중</p>
     </main>
   </div>
 </template>

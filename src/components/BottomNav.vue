@@ -5,7 +5,7 @@ const route = useRoute()
 const router = useRouter()
 
 const items = [
-  { path: '/settings', label: '기준정보', icon: '⚙️' },
+  { path: '/settings', label: '환경설정', icon: '⚙️' },
   { path: '/csr', label: 'CSR', icon: '🗂️' },
   { path: '/ts', label: 'TS', icon: '🛠️' },
   { path: '/work', label: '업무일지', icon: '📋' },
