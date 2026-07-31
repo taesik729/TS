@@ -153,8 +153,8 @@ async function handleDelete() {
             <tr>
               <th class="col-cat">분류</th>
               <th class="col-title">제목</th>
-              <th>요청사항</th>
-              <th>처리사항</th>
+              <th>장애발생</th>
+              <th>장애처리</th>
               <th class="col-date">날짜</th>
             </tr>
           </thead>
@@ -199,12 +199,12 @@ async function handleDelete() {
           <input type="text" v-model="draft.title" placeholder="제목 입력" />
         </div>
         <div class="modal-row content-row">
-          <label>요청사항</label>
-          <textarea v-model="draft.request_content" placeholder="요청사항을 입력하세요."></textarea>
+          <label>장애발생</label>
+          <textarea v-model="draft.request_content" placeholder="장애발생 내용을 입력하세요."></textarea>
         </div>
         <div class="modal-row content-row">
-          <label>처리사항</label>
-          <textarea v-model="draft.resolution_content" placeholder="처리사항을 입력하세요."></textarea>
+          <label>장애처리</label>
+          <textarea v-model="draft.resolution_content" placeholder="장애처리 내용을 입력하세요."></textarea>
         </div>
         <div class="modal-actions">
           <button v-if="modalMode === 'edit'" class="danger" @click="handleDelete">삭제</button>
