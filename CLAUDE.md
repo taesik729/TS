@@ -23,15 +23,16 @@ Vue 3 (`<script setup>`) + Vite + Supabase(JS client) + vue-router + TipTap(`@ti
 ## Supabase
 
 - **태식팜(FRONTEND) 프로젝트와 동일한 Supabase 인스턴스를 재사용** (별도 프로젝트 아님)
-- 이 앱 전용 테이블: `ts_notes`, `csr_tasks`, `csr_comments`, `work_logs` (모두 RLS 비활성화 — 개인용 도구라 로그인 없이 anon key로 직접 CRUD)
-- Storage 버킷: `csr-attachments` (공개 읽기/쓰기 — CSR·업무일지 본문에 삽입되는 이미지 업로드용, 두 화면이 같은 버킷 공유)
-- 마이그레이션: `src/supabase/migrations/001_init.sql` ~ `007_ts_category_mmd.sql`
+- 이 앱 전용 테이블: `ts_notes`, `csr_tasks`, `csr_comments`, `work_logs`, `analysis_items` (모두 RLS 비활성화 — 개인용 도구라 로그인 없이 anon key로 직접 CRUD)
+- Storage 버킷: `csr-attachments` (공개 읽기/쓰기 — CSR·업무일지·분석 본문에 삽입되는 이미지 업로드용, 세 화면이 같은 버킷 공유)
+- 마이그레이션: `src/supabase/migrations/001_init.sql` ~ `008_analysis.sql`
 
 ```sql
 ts_notes: id, note_date(date), category(MES|SPC|MMD), title, request_content, resolution_content, created_at, updated_at
 csr_tasks: id, task_no(자동증가), title, status(진행|완료), assignee, start_date, due_date, priority(낮음|보통|높음), progress(0~100), content(리치텍스트 HTML), created_at, updated_at
 csr_comments: id, task_id(FK), content, created_at
 work_logs: id, log_date(date, UNIQUE — 하루 1건), content(리치텍스트 HTML), created_at, updated_at
+analysis_items: id, parent_id(자기참조 FK, 무제한 depth 트리), system(MES|SPC|MMD, 최상위만), work_type(개발|분석, 최상위만), log_date(date, 최상위만), title, content(리치텍스트 HTML), sort_order, created_at, updated_at
 ```
 
 ---
@@ -43,20 +44,22 @@ src/
 ├── router/
 │   └── index.js            # /settings, /csr, /ts(기본), /work, /study
 ├── components/
-│   └── BottomNav.vue        # 하단 5탭 (환경설정/CSR/TS/업무일지/분석)
+│   ├── BottomNav.vue        # 하단 5탭 (환경설정/CSR/TS/업무일지/분석)
+│   └── AnalysisTreeNode.vue # 분석 트리용 재귀 컴포넌트 (SFC 자기 자신을 재귀 참조)
 ├── views/
 │   ├── TSView.vue           # TS(트러블슈팅) 화면 — 필터+그리드+상세 모두 포함, 컴포넌트 분리 안 함
 │   ├── SettingsView.vue     # 환경설정 — 준비중 placeholder
 │   ├── CSRView.vue          # CSR 업무 관리 — 그리드 + 우측 슬라이드 작성/상세 패널
 │   ├── WorkView.vue         # 업무일지 — 달력 뷰 + 우측 슬라이드 작성 패널
-│   └── StudyView.vue        # 분석 — 준비중 placeholder
+│   └── StudyView.vue        # 분석 — 상단 필터바 + 좌측 트리 + 우측 인라인 편집 (라우트/파일명은 그대로 study지만 라벨은 "분석")
 ├── composables/
 │   ├── useNotes.js          # TS Supabase CRUD (fetchList/insertNote/updateNote/deleteNote)
-│   ├── useCSR.js            # CSR Supabase CRUD (useCSRTasks/useComments/uploadCSRImage) — uploadCSRImage는 업무일지도 재사용
-│   └── useWorkLogs.js       # 업무일지 Supabase CRUD (fetchMonth/fetchByDate/upsertLog/deleteLog)
+│   ├── useCSR.js            # CSR Supabase CRUD (useCSRTasks/useComments/uploadCSRImage) — uploadCSRImage는 업무일지·분석도 재사용
+│   ├── useWorkLogs.js       # 업무일지 Supabase CRUD (fetchMonth/fetchByDate/upsertLog/deleteLog)
+│   └── useAnalysis.js       # 분석 Supabase CRUD (fetchTree/addItem/updateItem/deleteItem)
 └── supabase/
     ├── client.js
-    └── migrations/001_init.sql ~ 007_ts_category_mmd.sql
+    └── migrations/001_init.sql ~ 008_analysis.sql
 ```
 
 ---
@@ -65,7 +68,7 @@ src/
 
 - 5탭: **환경설정 / CSR / TS / 업무일지 / 분석** ("TS" = Troubleshooting 약자, "환경설정"은 한때 "기준정보"로 바꿨다가 다시 "환경설정"으로 복귀, "업무일지"는 예전 "업무파악", "분석"은 예전 "공부"→"개발공부"에서 이름 변경)
 - 각 탭은 좌측 사이드(aside) + 우측 메인 영역 레이아웃을 공유 — 좌측에는 탭마다 다른 콤보/텍스트가 들어갈 수 있음 (TS는 기간·분류 필터, 업무일지는 달력이라 사이드 없이 전체 폭 사용, 나머지는 아직 미정)
-- 환경설정/분석은 아직 내용 미정 — 향후 설계 후 구현 예정
+- 환경설정은 아직 내용 미정 — 향후 설계 후 구현 예정
 
 ## TS 탭 화면 동작
 
@@ -96,6 +99,16 @@ src/
 - **하루 1건 원칙** — 날짜 셀 클릭 시 CSR "추가" 팝업과 동일한 스타일(우측 슬라이드 패널, 820px, TipTap 리치텍스트)이 뜸. 이미 그 날짜에 기록이 있으면 기존 내용을 불러와 이어서 수정, 없으면 빈 채로 새로 작성(별도 제목/상태 필드 없이 본문만 있음 — CSR보다 단순한 구조)
 - 이미지도 CSR과 동일하게 **저장 시점에 지연 업로드** (`useCSR.uploadCSRImage` 재사용, `csr-attachments` 버킷 공유)
 - 저장(`useWorkLogs.upsertLog`, `log_date` UNIQUE 기준 upsert) / 삭제(`useWorkLogs.deleteLog`, 기존 기록 있을 때만 버튼 노출) 후 패널 자동 닫힘 + 해당 월 점 표시 갱신
+
+## 분석 탭 화면 동작
+
+- 목적: **화면 분석·업무 분석 내용을 트리 구조로 정리**하는 용도 (OneNote 트리 메뉴를 대체하는 느낌). CSR/업무일지와 달리 **팝업이 아니라 좌우 분할 화면에 항상 붙어있는 인라인 편집** 방식
+- **상단 바**: 기간(시작~종료 날짜) + 시스템(전체/MES/SPC/MMD) + 업무(전체/개발/분석) + 제목 검색 + "추가"(최상위 항목 신규 작성)
+- **좌측**: 트리 목록(`AnalysisTreeNode.vue`, 재귀 컴포넌트) — 상단 필터에 걸리는 **최상위(제목) 항목**을 찾고, 그 항목의 하위 트리 전체를 `useAnalysis.fetchTree`가 함께 불러와 클라이언트에서 `parent_id` 기준으로 트리 구성(`treeRoots` computed). 하위업무는 계속 하위업무를 가질 수 있는 **무제한 depth**
+- **우측**: 트리 노드를 클릭하면 그 자리에서 바로 내용이 편집 가능한 상태로 표시(`isEditing` 플래그로 "선택 안내문" ↔ "편집 폼" 전환). 최상위(제목, `parent_id` 없음) 노드일 때만 시스템/업무/날짜 메타 필드가 보이고, 하위업무는 제목+본문만
+- 본문은 CSR/업무일지와 동일하게 **TipTap 리치텍스트 + 이미지 지연 업로드**(`pendingImages`/`resolvePendingImages`, `csr-attachments` 버킷 재사용)
+- 에디터 툴바의 **"+ 하위업무 추가"** 버튼(선택된 노드가 저장된 상태여야 활성화)으로 그 노드의 자식 항목을 새로 작성 — 저장 전까지 상단에 "상위 업무: OOO" 힌트 표시
+- 저장(`useAnalysis.addItem`/`updateItem`) / 삭제(`useAnalysis.deleteItem`, FK `ON DELETE CASCADE`로 하위 트리 전체 삭제) — CSR/업무일지와 달리 저장해도 패널이 닫히지 않고 계속 그 화면에 머무름(팝업이 아니므로)
 
 ## 개발 환경
 
