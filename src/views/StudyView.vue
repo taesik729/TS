@@ -43,15 +43,21 @@ watch([filterDateFrom, filterDateTo, filterSystem, filterWorkType], reloadTree)
 const treeRoots = computed(() => {
   const byId = new Map()
   items.value.forEach(item => byId.set(item.id, { ...item, children: [] }))
-  const roots = []
+  const realRoots = []
   byId.forEach(item => {
     if (item.parent_id && byId.has(item.parent_id)) {
       byId.get(item.parent_id).children.push(item)
     } else if (!item.parent_id) {
-      roots.push(item)
+      realRoots.push(item)
     }
   })
-  return roots
+
+  return SYSTEMS.map(sys => ({
+    id: `sys-${sys}`,
+    title: sys,
+    virtual: true,
+    children: realRoots.filter(r => r.system === sys)
+  }))
 })
 
 const selectedId = ref(null)
@@ -135,6 +141,7 @@ function pickImageFile() {
 }
 
 function selectNode(node) {
+  if (node.virtual) return
   pendingImages.clear()
   selectedId.value = node.id
   newChildParentTitle.value = ''
