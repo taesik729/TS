@@ -30,6 +30,19 @@ async function reloadTree() {
     dateTo: filterDateTo.value || null,
     keyword: searchKeyword.value.trim() || null
   })
+  if (searchKeyword.value.trim()) {
+    selectFirstMatch()
+  }
+}
+
+function selectFirstMatch() {
+  const needle = searchKeyword.value.trim().toLowerCase()
+  const match = items.value.find(item => {
+    const title = (item.title || '').toLowerCase()
+    const content = (item.content || '').toLowerCase()
+    return title.includes(needle) || content.includes(needle)
+  })
+  if (match) selectNode(match)
 }
 
 function clearDateRange() {
