@@ -21,8 +21,49 @@ const filterDateTo = ref('')
 const filterSystem = ref('')
 const filterWorkType = ref('')
 const searchKeyword = ref('')
+const showSearchDropdown = ref(false)
+
+const searchResults = computed(() => {
+  const needle = searchKeyword.value.trim().toLowerCase()
+  if (!needle) return []
+  const byId = new Map(items.value.map(i => [i.id, i]))
+
+  return items.value
+    .filter(item => {
+      const title = (item.title || '').toLowerCase()
+      const content = (item.content || '').toLowerCase()
+      return title.includes(needle) || content.includes(needle)
+    })
+    .map(item => {
+      const ancestors = []
+      let cur = item
+      const seen = new Set()
+      while (cur.parent_id && byId.has(cur.parent_id) && !seen.has(cur.id)) {
+        seen.add(cur.id)
+        cur = byId.get(cur.parent_id)
+        ancestors.unshift(cur.title)
+      }
+      if (cur.system) ancestors.unshift(cur.system)
+      return { item, breadcrumb: ancestors.join(' » ') }
+    })
+    .slice(0, 30)
+})
+
+function selectSearchResult(item) {
+  showSearchDropdown.value = false
+  selectNode(item)
+}
+
+function hideSearchDropdownDelayed() {
+  setTimeout(() => { showSearchDropdown.value = false }, 150)
+}
+
+watch(searchKeyword, (val) => {
+  showSearchDropdown.value = !!val.trim()
+})
 
 async function reloadTree() {
+  showSearchDropdown.value = false
   await fetchTree({
     system: filterSystem.value || null,
     workType: filterWorkType.value || null,
@@ -296,13 +337,28 @@ async function handleDelete() {
         <option v-for="w in WORK_TYPES" :key="w" :value="w">{{ w }}</option>
       </select>
 
-      <input
-        type="text"
-        class="search-input"
-        v-model="searchKeyword"
-        placeholder="제목·내용 검색"
-        @keyup.enter="reloadTree"
-      />
+      <div class="search-wrap">
+        <input
+          type="text"
+          class="search-input"
+          v-model="searchKeyword"
+          placeholder="제목·내용 검색"
+          @focus="showSearchDropdown = !!searchKeyword.trim()"
+          @blur="hideSearchDropdownDelayed"
+          @keyup.enter="reloadTree"
+        />
+        <div v-if="showSearchDropdown && searchResults.length" class="search-dropdown">
+          <div
+            v-for="r in searchResults"
+            :key="r.item.id"
+            class="search-result"
+            @mousedown.prevent="selectSearchResult(r.item)"
+          >
+            <div class="sr-title">{{ r.item.title }}</div>
+            <div v-if="r.breadcrumb" class="sr-path">{{ r.breadcrumb }}</div>
+          </div>
+        </div>
+      </div>
       <button @click="reloadTree">검색</button>
       <button class="primary" @click="startNewRoot">추가</button>
     </div>
@@ -395,9 +451,58 @@ async function handleDelete() {
   padding: 4px 10px;
 }
 
-.search-input {
-  width: 200px;
+.search-wrap {
+  position: relative;
   margin-left: auto;
+}
+
+.search-input {
+  width: 220px;
+}
+
+.search-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  width: 320px;
+  max-height: 360px;
+  overflow-y: auto;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-md);
+  z-index: 50;
+}
+
+.search-result {
+  padding: 8px 12px;
+  cursor: pointer;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.search-result:last-child {
+  border-bottom: none;
+}
+
+.search-result:hover {
+  background: var(--color-primary-soft);
+}
+
+.sr-title {
+  font-size: 13px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sr-path {
+  font-size: 11px;
+  color: var(--color-text-muted);
+  margin-top: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .an-body {
