@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
 import { useEditor, EditorContent } from '@tiptap/vue-3'
 import StarterKit from '@tiptap/starter-kit'
 import Image from '@tiptap/extension-image'
@@ -153,6 +153,49 @@ function pickImageFile() {
   input.click()
 }
 
+function applyContentHighlight() {
+  if (!window.CSS || !CSS.highlights) return
+  const keyword = searchKeyword.value.trim()
+  if (!keyword) {
+    CSS.highlights.delete('search-hl')
+    return
+  }
+
+  const root = document.querySelector('.editor-content .ProseMirror')
+  if (!root) return
+
+  const needle = keyword.toLowerCase()
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT)
+  const ranges = []
+  let node
+  while ((node = walker.nextNode())) {
+    const text = node.textContent.toLowerCase()
+    let idx = 0
+    while ((idx = text.indexOf(needle, idx)) !== -1) {
+      const range = new Range()
+      range.setStart(node, idx)
+      range.setEnd(node, idx + needle.length)
+      ranges.push(range)
+      idx += needle.length
+    }
+  }
+  CSS.highlights.set('search-hl', new Highlight(...ranges))
+}
+
+// TipTap이 내용을 처음 렌더링할 때 한 프레임 안에 DOM 반영이 끝나지 않는 경우가 있어
+// 몇 프레임에 걸쳐 재시도한다 (idempotent라 여러 번 호출해도 안전)
+function scheduleContentHighlight() {
+  nextTick(() => {
+    applyContentHighlight()
+    requestAnimationFrame(() => {
+      applyContentHighlight()
+      requestAnimationFrame(() => {
+        applyContentHighlight()
+      })
+    })
+  })
+}
+
 function selectNode(node) {
   if (node.virtual) return
   pendingImages.clear()
@@ -169,6 +212,7 @@ function selectNode(node) {
     content: node.content || ''
   }
   editor.value.commands.setContent(node.content || '')
+  scheduleContentHighlight()
 }
 
 function startNewRoot() {
@@ -182,6 +226,7 @@ function startNewRoot() {
     log_date: filterDateFrom.value || todayStr()
   })
   editor.value.commands.setContent('')
+  if (window.CSS && CSS.highlights) CSS.highlights.delete('search-hl')
 }
 
 function startNewChild() {
@@ -191,6 +236,7 @@ function startNewChild() {
   isEditing.value = true
   draft.value = emptyDraft({ parent_id: draft.value.id })
   editor.value.commands.setContent('')
+  if (window.CSS && CSS.highlights) CSS.highlights.delete('search-hl')
 }
 
 async function save() {
@@ -275,11 +321,11 @@ async function handleDelete() {
       </aside>
 
       <main class="an-detail">
-        <div v-if="!isEditing" class="empty-detail">
+        <div v-show="!isEditing" class="empty-detail">
           왼쪽 트리에서 항목을 선택하거나 "추가"를 눌러 새로 작성하세요.
         </div>
 
-        <template v-else>
+        <div v-show="isEditing" class="detail-form">
           <p v-if="newChildParentTitle" class="parent-hint">상위 업무: {{ newChildParentTitle }}</p>
 
           <input type="text" class="title-input" v-model="draft.title" placeholder="제목을 입력하세요" />
@@ -317,7 +363,7 @@ async function handleDelete() {
             <button v-if="draft.id" class="danger" @click="handleDelete">삭제</button>
             <button class="primary an-save" @click="save">저장</button>
           </div>
-        </template>
+        </div>
       </main>
     </div>
   </div>
@@ -381,6 +427,13 @@ async function handleDelete() {
   min-width: 0;
   overflow-y: auto;
   padding: 24px;
+  display: flex;
+  flex-direction: column;
+}
+
+.detail-form {
+  flex: 1;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -489,5 +542,12 @@ async function handleDelete() {
 
 .danger:hover {
   background: #fef2f2;
+}
+</style>
+
+<style>
+/* Custom Highlight API는 scoped 속성이 적용되지 않아 전역 스타일로 선언 */
+::highlight(search-hl) {
+  background-color: #fde047;
 }
 </style>
