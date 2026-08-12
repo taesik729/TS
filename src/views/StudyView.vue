@@ -241,7 +241,7 @@ async function handleDelete() {
         type="text"
         class="search-input"
         v-model="searchKeyword"
-        placeholder="제목 검색"
+        placeholder="제목·내용 검색"
         @keyup.enter="reloadTree"
       />
       <button @click="reloadTree">검색</button>
