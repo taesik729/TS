@@ -268,6 +268,7 @@ async function handleDelete() {
           :key="node.id"
           :node="node"
           :selected-id="selectedId"
+          :keyword="searchKeyword"
           @select="selectNode"
         />
         <p v-if="!loading && treeRoots.length === 0" class="empty">항목이 없습니다.</p>

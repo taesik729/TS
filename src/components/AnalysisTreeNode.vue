@@ -1,10 +1,11 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 
 const props = defineProps({
   node: { type: Object, required: true },
   selectedId: { type: String, default: null },
-  depth: { type: Number, default: 0 }
+  depth: { type: Number, default: 0 },
+  keyword: { type: String, default: '' }
 })
 
 const emit = defineEmits(['select'])
@@ -14,6 +15,22 @@ const expanded = ref(true)
 function toggle() {
   expanded.value = !expanded.value
 }
+
+function escapeHtml(str) {
+  return str.replace(/[&<>"']/g, c => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  }[c]))
+}
+
+const highlightedTitle = computed(() => {
+  const title = props.node.title || ''
+  const kw = props.keyword.trim()
+  const escaped = escapeHtml(title)
+  if (!kw) return escaped
+  const escapedKw = escapeHtml(kw).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  const re = new RegExp(`(${escapedKw})`, 'gi')
+  return escaped.replace(re, '<mark class="hl">$1</mark>')
+})
 </script>
 
 <template>
@@ -29,7 +46,7 @@ function toggle() {
         :class="{ empty: !node.children || node.children.length === 0 }"
         @click.stop="toggle"
       >{{ node.children && node.children.length ? (expanded ? '▼' : '▶') : '' }}</span>
-      <span class="tree-title">{{ node.title }}</span>
+      <span class="tree-title" v-html="highlightedTitle"></span>
     </div>
     <div v-if="expanded && node.children && node.children.length" class="tree-children">
       <AnalysisTreeNode
@@ -38,6 +55,7 @@ function toggle() {
         :node="child"
         :selected-id="selectedId"
         :depth="depth + 1"
+        :keyword="keyword"
         @select="emit('select', $event)"
       />
     </div>
@@ -83,5 +101,12 @@ function toggle() {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.tree-title :deep(.hl) {
+  background: #fde047;
+  color: inherit;
+  border-radius: 2px;
+  padding: 0 1px;
 }
 </style>
