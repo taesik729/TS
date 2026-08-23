@@ -11,6 +11,7 @@
 - **GitHub**: https://github.com/taesik729/TS (Private)
 - **배포**: GitHub main 브랜치 push → Vercel(taesik-farm 팀, 프로젝트명 `ts`) 자동 배포
 - 로그인 없음 — 개인 전용, anon key로 바로 CRUD
+- 파비콘: `public/favicon.svg` (파란 배경 + 🛠️), `index.html`에서 링크
 
 ---
 
