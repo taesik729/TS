@@ -12,6 +12,7 @@
 - **배포**: GitHub main 브랜치 push → Vercel(taesik-farm 팀, 프로젝트명 `ts`) 자동 배포
 - 로그인 없음 — 개인 전용, anon key로 바로 CRUD
 - 파비콘: `public/favicon.svg` (보라색(#6d5cd8) 둥근 사각형 + 흰색 "TS" 텍스트), `index.html`에서 링크
+- **PWA**: `public/manifest.webmanifest` + `public/sw.js`(최소 서비스워커, 캐싱 없이 네트워크로만 패스스루) — 휴대폰에서 "홈 화면에 추가"하면 standalone 모드(브라우저 UI 없이) 앱처럼 열림. `src/main.js`에서 서비스워커 등록
 
 ---
 
