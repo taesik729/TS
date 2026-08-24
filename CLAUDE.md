@@ -122,6 +122,7 @@ src/
 - **안전영역(노치/홈 인디케이터) 대응**: `App.vue`의 `.app-shell`에 `env(safe-area-inset-top/left/right)` 패딩, `BottomNav.vue`의 `.bottom-nav`에 `env(safe-area-inset-bottom)` 만큼 높이/패딩 추가. `App.vue`는 `100vh` 대신 `100dvh` 사용(모바일 브라우저 주소창 유무에 따른 높이 오차 방지)
 - **각 화면(TS/CSR/업무일지/설정&분석)에 `@media (max-width: 720px)`** 반응형 규칙 — 좌측 고정폭 사이드바(`.side`, `.an-tree`)를 세로 스택 상단 배치로 전환, 툴바 `flex-wrap`, 슬라이드 패널은 `width: 100%`, 달력 셀은 패딩/폰트 축소. `src/style.css`에 `overflow-x: hidden` 안전망도 있음
 - 이 항목들을 만들 때마다 위 미디어쿼리 패턴을 그대로 따라갈 것 — 새 화면 추가 시 모바일 대응 빠뜨리지 말 것 (실기기에서만 드러나는 레이아웃 버그가 반복되는 편이라 처음부터 방어적으로 작성)
+- **하단 네비 밀림 버그 패턴**: `.board { display:flex } → .main { flex:1; display:flex; flex-direction:column }`처럼 flex-item이면서 동시에 flex-container인 요소는 반드시 `min-height: 0`을 같이 줄 것. 안 주면 내부 스크롤 영역(`.grid` 등)의 `flex:1; overflow:auto`가 무시되고 `.main`이 콘텐츠 크기만큼 늘어나서 전체 페이지가 뷰포트보다 커지고, 하단 `BottomNav`가 화면 밖으로 밀려나 버림(TS/CSR에서 실제 발생했던 버그). 새 화면 만들 때 이 패턴 체크할 것
 
 ## 개발 환경
 
