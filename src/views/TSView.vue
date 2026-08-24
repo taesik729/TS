@@ -343,7 +343,7 @@ tbody tr:last-child td {
 
 .col-date { width: 110px; }
 .col-cat { width: 90px; }
-.col-title { width: 280px; }
+.col-title { width: 160px; }
 
 .content-cell {
   white-space: pre-line;
