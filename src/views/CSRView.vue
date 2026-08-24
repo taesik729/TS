@@ -744,4 +744,51 @@ tbody tr:hover {
 .danger:hover {
   background: #fef2f2;
 }
+
+@media (max-width: 720px) {
+  .board {
+    flex-direction: column;
+  }
+
+  .side {
+    width: auto;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 12px;
+    padding: 12px;
+  }
+
+  .field {
+    flex: 1;
+    min-width: 140px;
+  }
+
+  .toolbar {
+    flex-wrap: wrap;
+    padding: 10px 12px;
+  }
+
+  .search-input {
+    width: 100%;
+    order: 1;
+  }
+
+  .toolbar-actions {
+    margin-left: 0;
+    order: 2;
+  }
+
+  .grid {
+    padding: 10px 12px;
+  }
+
+  .panel {
+    width: 100%;
+  }
+
+  .meta-grid {
+    grid-template-columns: 1fr;
+  }
+}
 </style>

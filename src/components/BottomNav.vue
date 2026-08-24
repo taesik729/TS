@@ -30,11 +30,12 @@ const items = [
 <style scoped>
 .bottom-nav {
   flex-shrink: 0;
-  height: 72px;
+  height: calc(72px + env(safe-area-inset-bottom));
+  padding: 0 6px calc(6px + env(safe-area-inset-bottom));
   display: flex;
   align-items: center;
   gap: 4px;
-  padding: 0 6px;
+  box-sizing: border-box;
   border-top: 1px solid var(--color-border);
   background: var(--color-surface);
   box-shadow: 0 -1px 4px rgba(16, 24, 40, 0.04);

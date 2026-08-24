@@ -438,4 +438,41 @@ async function handleDelete() {
 .danger:hover {
   background: #fef2f2;
 }
+
+@media (max-width: 720px) {
+  .wv-root {
+    padding: 10px;
+    gap: 8px;
+  }
+
+  .cal-title {
+    font-size: 15px;
+  }
+
+  .cal-grid {
+    gap: 3px;
+  }
+
+  .cal-cell {
+    padding: 4px;
+    gap: 2px;
+  }
+
+  .cal-day {
+    font-size: 11px;
+  }
+
+  .cal-dot {
+    width: 7px;
+    height: 7px;
+  }
+
+  .panel {
+    width: 100%;
+  }
+
+  .panel-body {
+    padding: 12px;
+  }
+}
 </style>

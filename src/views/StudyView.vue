@@ -648,6 +648,47 @@ async function handleDelete() {
 .danger:hover {
   background: #fef2f2;
 }
+
+@media (max-width: 720px) {
+  .an-toolbar {
+    flex-wrap: wrap;
+    padding: 10px 12px;
+  }
+
+  .search-wrap {
+    margin-left: 0;
+    order: 1;
+    width: 100%;
+  }
+
+  .search-input {
+    width: 100%;
+  }
+
+  .search-dropdown {
+    width: 100%;
+  }
+
+  .an-body {
+    flex-direction: column;
+  }
+
+  .an-tree {
+    width: auto;
+    max-height: 40vh;
+    border-right: none;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .an-detail {
+    padding: 16px;
+  }
+
+  .meta-grid {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+}
 </style>
 
 <style>
