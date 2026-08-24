@@ -29,6 +29,11 @@ const items = [
 
 <style scoped>
 .bottom-nav {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 200;
   flex-shrink: 0;
   height: calc(72px + env(safe-area-inset-bottom));
   padding: 0 6px calc(6px + env(safe-area-inset-bottom));

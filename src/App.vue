@@ -27,5 +27,6 @@ import BottomNav from './components/BottomNav.vue'
   flex: 1;
   min-height: 0;
   min-width: 0;
+  padding-bottom: calc(72px + env(safe-area-inset-bottom));
 }
 </style>
