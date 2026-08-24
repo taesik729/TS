@@ -341,9 +341,9 @@ tbody tr:last-child td {
   border-bottom: none;
 }
 
-.col-date { width: 110px; }
-.col-cat { width: 90px; }
-.col-title { width: 160px; }
+.col-date { width: 90px; }
+.col-cat { width: 70px; }
+.col-title { width: 120px; }
 
 .content-cell {
   white-space: pre-line;
