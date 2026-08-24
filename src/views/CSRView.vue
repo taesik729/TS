@@ -756,7 +756,7 @@ tbody tr:hover {
     flex-direction: row;
     flex-wrap: nowrap;
     overflow-x: auto;
-    align-items: flex-end;
+    align-items: center;
     gap: 8px;
     padding: 8px 12px;
   }
@@ -774,7 +774,7 @@ tbody tr:hover {
   }
 
   .date-full {
-    width: 82px;
+    width: 102px;
     flex-shrink: 0;
     font-size: 12px;
     padding: 5px 4px;
@@ -785,6 +785,7 @@ tbody tr:hover {
   }
 
   .clear {
+    align-self: center;
     font-size: 11px;
     padding: 4px 8px;
     white-space: nowrap;
