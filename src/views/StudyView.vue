@@ -651,22 +651,46 @@ async function handleDelete() {
 
 @media (max-width: 720px) {
   .an-toolbar {
-    flex-wrap: wrap;
-    padding: 10px 12px;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding: 8px 12px;
+    gap: 6px;
+  }
+
+  .an-toolbar input[type="date"] {
+    width: 110px;
+    font-size: 12px;
+    padding: 5px 4px;
+    flex-shrink: 0;
+  }
+
+  .an-toolbar select {
+    font-size: 12px;
+    padding: 5px 6px;
+    flex-shrink: 0;
+  }
+
+  .an-toolbar > button {
+    font-size: 12px;
+    padding: 5px 10px;
+    white-space: nowrap;
+    flex-shrink: 0;
   }
 
   .search-wrap {
     margin-left: 0;
-    order: 1;
-    width: 100%;
+    flex-shrink: 0;
+    width: 140px;
   }
 
   .search-input {
-    width: 100%;
+    width: 140px;
   }
 
   .search-dropdown {
-    width: 100%;
+    width: 260px;
+    right: auto;
+    left: 0;
   }
 
   .an-body {

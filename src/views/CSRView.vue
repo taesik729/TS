@@ -754,30 +754,71 @@ tbody tr:hover {
   .side {
     width: auto;
     flex-direction: row;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
+    overflow-x: auto;
     align-items: flex-end;
-    gap: 12px;
-    padding: 12px;
+    gap: 8px;
+    padding: 8px 12px;
   }
 
   .field {
-    flex: 1;
-    min-width: 140px;
+    flex: none;
+    flex-direction: row;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .field label {
+    font-size: 10px;
+    flex-shrink: 0;
+  }
+
+  .date-full {
+    width: 82px;
+    flex-shrink: 0;
+    font-size: 12px;
+    padding: 5px 4px;
+  }
+
+  .range-sep {
+    padding: 0 1px;
+  }
+
+  .clear {
+    font-size: 11px;
+    padding: 4px 8px;
+    white-space: nowrap;
+  }
+
+  .field select {
+    font-size: 12px;
+    padding: 5px 6px;
   }
 
   .toolbar {
-    flex-wrap: wrap;
-    padding: 10px 12px;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding: 8px 12px;
   }
 
   .search-input {
-    width: 100%;
-    order: 1;
+    width: 120px;
+    flex: 1;
+    min-width: 90px;
+  }
+
+  .toolbar button {
+    font-size: 12px;
+    padding: 5px 10px;
+    white-space: nowrap;
+    flex-shrink: 0;
   }
 
   .toolbar-actions {
     margin-left: 0;
-    order: 2;
+    display: flex;
+    gap: 6px;
+    flex-shrink: 0;
   }
 
   .grid {
