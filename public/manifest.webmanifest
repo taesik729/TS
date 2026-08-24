@@ -1,6 +1,6 @@
 {
-  "name": "TS 업무노트",
-  "short_name": "TS",
+  "name": "TS Note",
+  "short_name": "TS Note",
   "description": "MES/SPC/MMD 업무 지식 관리",
   "start_url": "/",
   "scope": "/",
