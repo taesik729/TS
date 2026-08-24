@@ -1,4 +1,4 @@
-# TS 업무노트 — CLAUDE.md
+# TS Note — CLAUDE.md
 
 새 세션에서 이 파일을 읽으면 프로젝트 맥락을 바로 파악할 수 있습니다.
 
@@ -6,13 +6,13 @@
 
 ## 프로젝트 개요
 
-- OneNote로 관리하던 MES/SPC/MMD 업무 지식(EVENT NAME, 용어 등)을 대체하는 개인용 노트 관리 웹앱
+- 앱 이름: **TS Note** (OneNote로 관리하던 MES/SPC/MMD 업무 지식(EVENT NAME, 용어 등)을 대체하는 개인용 노트 관리 웹앱)
 - **운영 URL**: https://ts-liart.vercel.app
 - **GitHub**: https://github.com/taesik729/TS (Private)
 - **배포**: GitHub main 브랜치 push → Vercel(taesik-farm 팀, 프로젝트명 `ts`) 자동 배포
 - 로그인 없음 — 개인 전용, anon key로 바로 CRUD
 - 파비콘: `public/favicon.svg` (보라색(#6d5cd8) 둥근 사각형 + 흰색 "TS" 텍스트), `index.html`에서 링크
-- **PWA**: `public/manifest.webmanifest` + `public/sw.js`(최소 서비스워커, 캐싱 없이 네트워크로만 패스스루) — 휴대폰에서 "홈 화면에 추가"하면 standalone 모드(브라우저 UI 없이) 앱처럼 열림. `src/main.js`에서 서비스워커 등록
+- **PWA**: `public/manifest.webmanifest`(앱 이름 "TS Note") + `public/sw.js`(최소 서비스워커, 캐싱 없이 네트워크로만 패스스루) — 휴대폰에서 "홈 화면에 추가"하면 standalone 모드(브라우저 UI 없이) 앱처럼 열림. `src/main.js`에서 서비스워커 등록
 
 ---
 
