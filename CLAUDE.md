@@ -116,6 +116,13 @@ src/
 - 에디터 툴바의 **"+ 하위업무 추가"** 버튼(선택된 노드가 저장된 상태여야 활성화)으로 그 노드의 자식 항목을 새로 작성 — 저장 전까지 상단에 "상위 업무: OOO" 힌트 표시
 - 저장(`useAnalysis.addItem`/`updateItem`) / 삭제(`useAnalysis.deleteItem`, FK `ON DELETE CASCADE`로 하위 트리 전체 삭제) — CSR/업무일지와 달리 저장해도 패널이 닫히지 않고 계속 그 화면에 머무름(팝업이 아니므로)
 
+## 모바일(PWA) 대응
+
+- `index.html`: `viewport-fit=cover` + `manifest.webmanifest` + `sw.js`(최소 서비스워커) 연결 — 휴대폰에서 "홈 화면에 추가" 시 standalone 모드로 앱처럼 실행됨
+- **안전영역(노치/홈 인디케이터) 대응**: `App.vue`의 `.app-shell`에 `env(safe-area-inset-top/left/right)` 패딩, `BottomNav.vue`의 `.bottom-nav`에 `env(safe-area-inset-bottom)` 만큼 높이/패딩 추가. `App.vue`는 `100vh` 대신 `100dvh` 사용(모바일 브라우저 주소창 유무에 따른 높이 오차 방지)
+- **각 화면(TS/CSR/업무일지/설정&분석)에 `@media (max-width: 720px)`** 반응형 규칙 — 좌측 고정폭 사이드바(`.side`, `.an-tree`)를 세로 스택 상단 배치로 전환, 툴바 `flex-wrap`, 슬라이드 패널은 `width: 100%`, 달력 셀은 패딩/폰트 축소. `src/style.css`에 `overflow-x: hidden` 안전망도 있음
+- 이 항목들을 만들 때마다 위 미디어쿼리 패턴을 그대로 따라갈 것 — 새 화면 추가 시 모바일 대응 빠뜨리지 말 것 (실기기에서만 드러나는 레이아웃 버그가 반복되는 편이라 처음부터 방어적으로 작성)
+
 ## 개발 환경
 
 ```bash
