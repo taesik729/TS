@@ -194,7 +194,7 @@ function pickImageFile() {
   input.click()
 }
 
-function applyContentHighlight() {
+function applyContentHighlight(scrollTo = false) {
   if (!window.CSS || !CSS.highlights) return
   const keyword = searchKeyword.value.trim()
   if (!keyword) {
@@ -221,17 +221,32 @@ function applyContentHighlight() {
     }
   }
   CSS.highlights.set('search-hl', new Highlight(...ranges))
+
+  if (scrollTo && ranges.length) {
+    scrollToRange(ranges[0])
+  }
+}
+
+// 본문 스크롤 컨테이너(.editor-content) 안에서 매칭된 위치가 가운데쯤 보이도록 스크롤 이동
+function scrollToRange(range) {
+  const container = document.querySelector('.editor-content')
+  if (!container) return
+  const rect = range.getBoundingClientRect()
+  if (rect.width === 0 && rect.height === 0) return
+  const containerRect = container.getBoundingClientRect()
+  const offset = rect.top - containerRect.top + container.scrollTop - container.clientHeight / 2 + rect.height / 2
+  container.scrollTop = Math.max(offset, 0)
 }
 
 // TipTap이 내용을 처음 렌더링할 때 한 프레임 안에 DOM 반영이 끝나지 않는 경우가 있어
-// 몇 프레임에 걸쳐 재시도한다 (idempotent라 여러 번 호출해도 안전)
+// 몇 프레임에 걸쳐 재시도한다 (idempotent라 여러 번 호출해도 안전) — 마지막 재시도에서만 스크롤 이동
 function scheduleContentHighlight() {
   nextTick(() => {
     applyContentHighlight()
     requestAnimationFrame(() => {
       applyContentHighlight()
       requestAnimationFrame(() => {
-        applyContentHighlight()
+        applyContentHighlight(true)
       })
     })
   })
