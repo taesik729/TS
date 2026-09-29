@@ -26,14 +26,18 @@ CREATE TABLE IF NOT EXISTS user_systems (
 ALTER TABLE user_systems ENABLE ROW LEVEL SECURITY;
 
 -- 조회: 본인 배정 내역이거나 관리자
+DROP POLICY IF EXISTS "user_systems select own or admin" ON user_systems;
 CREATE POLICY "user_systems select own or admin" ON user_systems
   FOR SELECT USING (user_id = auth.uid() OR is_admin());
 
 -- 배정/해제(추가·수정·삭제)는 관리자만
+DROP POLICY IF EXISTS "user_systems insert admin only" ON user_systems;
 CREATE POLICY "user_systems insert admin only" ON user_systems
   FOR INSERT WITH CHECK (is_admin());
+DROP POLICY IF EXISTS "user_systems update admin only" ON user_systems;
 CREATE POLICY "user_systems update admin only" ON user_systems
   FOR UPDATE USING (is_admin()) WITH CHECK (is_admin());
+DROP POLICY IF EXISTS "user_systems delete admin only" ON user_systems;
 CREATE POLICY "user_systems delete admin only" ON user_systems
   FOR DELETE USING (is_admin());
 
