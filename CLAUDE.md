@@ -29,14 +29,16 @@ Vue 3 (`<script setup>`) + Vite + Supabase(JS client) + vue-router + TipTap(`@ti
 - 기존 데이터(다중 사용자 도입 전에 쌓인 것)는 전부 `taesik729@gmail.com` 계정으로 귀속시켜놓음
 - `csr_subtasks` 테이블은 하위업무 기능 제거 후 미사용 상태로 남아있음(RLS 미적용, 신경 안 써도 됨)
 - Storage 버킷: `csr-attachments` (공개 읽기/쓰기 — CSR·업무일지·분석 본문에 삽입되는 이미지 업로드용, 세 화면이 같은 버킷 공유). **사용자별 격리는 안 되어 있음** — 본문에 박힌 이미지 URL을 아는 사람만 볼 수 있는 수준의 보안이며, 폴더별 완전 격리가 필요해지면 추후 별도 작업 필요
-- 마이그레이션: `src/supabase/migrations/001_init.sql` ~ `009_multi_user_auth.sql`
+- `systems` 테이블: MES/SPC/MMD 등 시스템 기준정보. 사용자별 격리 대상이 아니라 **전체 로그인 사용자 공유**(RLS는 로그인 여부만 체크)
+- 마이그레이션: `src/supabase/migrations/001_init.sql` ~ `010_systems_master.sql`
 
 ```sql
-ts_notes: id, note_date(date), category(MES|SPC|MMD), title, request_content, resolution_content, user_id(FK auth.users), created_at, updated_at
+ts_notes: id, note_date(date), category(text, systems.name 참조하지만 FK는 아님), title, request_content, resolution_content, user_id(FK auth.users), created_at, updated_at
 csr_tasks: id, task_no(자동증가), title, status(진행|완료), assignee, start_date, due_date, priority(낮음|보통|높음), progress(0~100), content(리치텍스트 HTML), user_id(FK auth.users), created_at, updated_at
 csr_comments: id, task_id(FK), content, user_id(FK auth.users), created_at
 work_logs: id, log_date(date), user_id(FK auth.users), UNIQUE(log_date, user_id) — 사용자별 하루 1건, content(리치텍스트 HTML), created_at, updated_at
-analysis_items: id, parent_id(자기참조 FK, 무제한 depth 트리), system(MES|SPC|MMD, 최상위만), work_type(개발|분석, 최상위만), log_date(date, 최상위만), title, content(리치텍스트 HTML), sort_order, user_id(FK auth.users), created_at, updated_at
+analysis_items: id, parent_id(자기참조 FK, 무제한 depth 트리), system(text, systems.name 참조하지만 FK는 아님, 최상위만), work_type(개발|분석, 최상위만), log_date(date, 최상위만), title, content(리치텍스트 HTML), sort_order, user_id(FK auth.users), created_at, updated_at
+systems: id, name(UNIQUE), sort_order, created_at
 ```
 
 ---
@@ -61,10 +63,11 @@ src/
 │   ├── useNotes.js          # TS Supabase CRUD (fetchList/insertNote/updateNote/deleteNote)
 │   ├── useCSR.js            # CSR Supabase CRUD (useCSRTasks/useComments/uploadCSRImage) — uploadCSRImage는 업무일지·분석도 재사용
 │   ├── useWorkLogs.js       # 업무일지 Supabase CRUD (fetchMonth/fetchByDate/upsertLog/deleteLog)
-│   └── useAnalysis.js       # 분석 Supabase CRUD (fetchTree/addItem/updateItem/deleteItem)
+│   ├── useAnalysis.js       # 분석 Supabase CRUD (fetchTree/addItem/updateItem/deleteItem)
+│   └── useSystems.js        # 시스템 기준정보 CRUD (fetchSystems/addSystem/deleteSystem) — TS·설정&분석이 공용으로 사용
 └── supabase/
     ├── client.js
-    └── migrations/001_init.sql ~ 009_multi_user_auth.sql
+    └── migrations/001_init.sql ~ 010_systems_master.sql
 ```
 
 ---
@@ -76,6 +79,14 @@ src/
 - **가입은 이메일/비밀번호 자유가입** — 초대 코드나 도메인 제한 없음. 계정 자체는 Supabase Auth 표준 기능 그대로 사용(이메일 인증 여부는 Supabase 프로젝트 설정에 따름)
 - **데이터는 계정별로 완전 격리** — 동료가 새로 가입하면 자기가 쓴 CSR/TS/업무일지/분석만 보이고 태식님 데이터는 안 보임(공유 아님). 공유가 필요해지면 나중에 별도 설계 필요
 - 로그인 로직 자체(`useAuth.js`)는 FARM MES 프로젝트 것을 그대로 복사해서 사용 — 두 프로젝트가 같은 Supabase 프로젝트를 쓰므로 계정도 공유됨(한쪽에 가입하면 다른 쪽에도 그 계정으로 로그인 가능, 단 데이터는 앱별 테이블이 따로라 안 섞임)
+
+## 시스템(MES/SPC/MMD) 기준정보
+
+- **하드코딩 배열이 아니라 `systems` 테이블에서 관리** (2026-09 도입) — `useSystems.js`가 CRUD 담당, TSView(분류 콤보)와 StudyView(시스템 콤보 + 트리 최상위 그룹)가 공용으로 `fetchSystems()` 결과를 가져다 씀
+- **전체 로그인 사용자가 공유** — 개인 소유 데이터가 아니라 회사 시스템 자체를 나타내는 값이라, 로그인만 했으면 누구나 조회·추가·삭제 가능(RLS는 `auth.role() = 'authenticated'`만 체크, 비로그인 접근만 차단)
+- **StudyView(설정&분석) 툴바의 "시스템 관리" 버튼**에서 추가/삭제 — 등록 즉시 TS 분류 콤보·설정&분석 시스템 콤보·트리 최상위 그룹에 전부 반영됨(별도 새로고침 불필요, `fetchSystems()`가 두 화면에서 각자 자기 세션에 로드)
+- 시스템을 삭제해도 이미 그 시스템 값으로 저장된 기존 TS/분석 항목의 `category`/`system` 값은 그대로 남음(FK로 강제 연결돼있지 않음) — 목록에서만 빠지는 정도의 단순한 삭제
+- `ts_notes.category`, `analysis_items.system`에 걸려있던 `CHECK (... IN ('MES','SPC','MMD'))` 제약은 010 마이그레이션에서 제거함 — 이제 `systems`에 등록한 이름이면 뭐든 저장 가능
 
 ## 하단 네비게이션
 
@@ -115,7 +126,7 @@ src/
 ## 분석 탭 화면 동작
 
 - 목적: **화면 분석·업무 분석 내용을 트리 구조로 정리**하는 용도 (OneNote 트리 메뉴를 대체하는 느낌). CSR/업무일지와 달리 **팝업이 아니라 좌우 분할 화면에 항상 붙어있는 인라인 편집** 방식
-- **상단 바**: 기간(시작~종료 날짜) + 시스템(전체/MES/SPC/MMD) + 업무(전체/개발/분석) + 검색(제목+본문 내용, 트리의 모든 노드 대상) + "추가"(최상위 항목 신규 작성)
+- **상단 바**: 기간(시작~종료 날짜) + 시스템(전체 + `systems` 테이블에서 가져온 목록, 기본은 MES/SPC/MMD) + 업무(전체/개발/분석) + 검색(제목+본문 내용, 트리의 모든 노드 대상) + "시스템 관리"(등록/삭제) + "추가"(최상위 항목 신규 작성) — 시스템 목록/관리는 [시스템(MES/SPC/MMD) 기준정보](#시스템messpcmmd-기준정보) 참고
 - **검색 시 첫 번째 매칭 항목을 우측에 자동으로 열어줌** — `reloadTree`가 `fetchTree` 완료 후 검색어가 있으면 `selectFirstMatch()` 호출, `items`(fetchTree가 채운 flat 배열, DB `sort_order`→`created_at` 순) 중 title/content가 일치하는 첫 항목을 찾아 `selectNode`로 바로 오른쪽에 표시. 필터만 바꿔서 재조회될 때도 검색어가 남아있으면 동일하게 동작
 - **검색어 입력 중에는 OneNote 스타일 결과 드롭다운**이 검색창 아래 뜸(`showSearchDropdown` + `searchResults` computed) — `items`(현재 로드된 전체 데이터, 네트워크 재조회 없이 클라이언트에서만 필터링)에서 title/content가 일치하는 항목을 전부(최대 30개) 나열, 각 항목에 `시스템 » 상위경로 » ...` breadcrumb 표시. 항목 클릭(`@mousedown.prevent`로 blur보다 먼저 처리) 시 `selectSearchResult`가 바로 `selectNode` 호출해서 오른쪽에 표시 — "검색" 버튼을 안 눌러도 원하는 항목으로 바로 이동 가능. `searchKeyword`를 `watch`해서 값이 생기면 드롭다운을 띄움(입력 이벤트 자체가 아니라 값 변경에 반응 — 자동화 테스트 환경처럼 네이티브 `focus` 이벤트가 안 붙는 경우에도 안정적으로 동작하도록 이렇게 구현). "검색" 버튼 클릭/Enter/필터 변경으로 `reloadTree`가 돌면 드롭다운은 닫힘
 - **좌측**: 트리 목록(`AnalysisTreeNode.vue`, 재귀 컴포넌트) — `useAnalysis.fetchTree`가 전체 항목을 한 번에 불러온 뒤 클라이언트에서 필터링. 검색어는 트리의 **모든 노드**(제목+하위업무)의 title/content를 대상으로 매칭하고, 매칭된 노드가 속한 **최상위 항목**에 시스템/업무/기간 필터를 적용해 최종 표시할 최상위 집합을 결정 → 그 서브트리 전체를 `parent_id` 기준으로 트리 구성. 하위업무는 계속 하위업무를 가질 수 있는 **무제한 depth**
