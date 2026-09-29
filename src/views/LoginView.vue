@@ -35,11 +35,19 @@
 
 <script setup>
 import { ref, computed } from 'vue'
-import { useAuth } from '../composables/useAuth'
+import { useAuth, LAST_EMAIL_KEY } from '../composables/useAuth'
+
+function lastUsedEmail() {
+  try {
+    return localStorage.getItem(LAST_EMAIL_KEY) || ''
+  } catch (e) {
+    return ''
+  }
+}
 
 const { signIn, signUp, loading, error } = useAuth()
 const mode = ref('login')
-const email = ref('')
+const email = ref(lastUsedEmail())
 const password = ref('')
 const signupDone = ref(false)
 
