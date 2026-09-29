@@ -10,7 +10,7 @@
 - **운영 URL**: https://ts-liart.vercel.app
 - **GitHub**: https://github.com/taesik729/TS (Private)
 - **배포**: GitHub main 브랜치 push → Vercel(taesik-farm 팀, 프로젝트명 `ts`) 자동 배포
-- 로그인 없음 — 개인 전용, anon key로 바로 CRUD
+- **회원가입/로그인 필요** (2026-09 도입) — 이메일/비밀번호로 누구나 가입 가능, 로그인한 사용자는 본인이 작성한 데이터만 보임(RLS로 격리). 로그인 전엔 `LoginView`만 표시
 - 파비콘: `public/favicon.svg` (보라색(#6d5cd8) 둥근 사각형 + 흰색 "TS" 텍스트), `index.html`에서 링크
 - **PWA**: `public/manifest.webmanifest`(앱 이름 "TS Note") + `public/sw.js`(최소 서비스워커, 캐싱 없이 네트워크로만 패스스루) — 휴대폰에서 "홈 화면에 추가"하면 standalone 모드(브라우저 UI 없이) 앱처럼 열림. `src/main.js`에서 서비스워커 등록
 
@@ -24,17 +24,19 @@ Vue 3 (`<script setup>`) + Vite + Supabase(JS client) + vue-router + TipTap(`@ti
 
 ## Supabase
 
-- **태식팜(FRONTEND) 프로젝트와 동일한 Supabase 인스턴스를 재사용** (별도 프로젝트 아님)
-- 이 앱 전용 테이블: `ts_notes`, `csr_tasks`, `csr_comments`, `work_logs`, `analysis_items` (모두 RLS 비활성화 — 개인용 도구라 로그인 없이 anon key로 직접 CRUD)
-- Storage 버킷: `csr-attachments` (공개 읽기/쓰기 — CSR·업무일지·분석 본문에 삽입되는 이미지 업로드용, 세 화면이 같은 버킷 공유)
-- 마이그레이션: `src/supabase/migrations/001_init.sql` ~ `008_analysis.sql`
+- **태식팜(FRONTEND) 프로젝트와 동일한 Supabase 인스턴스를 재사용** (별도 프로젝트 아님) — Auth도 같은 인스턴스라 FARM MES에 이미 가입된 계정(`taesik729@gmail.com`)이면 TS Note에도 그대로 로그인 가능
+- 이 앱 전용 테이블: `ts_notes`, `csr_tasks`, `csr_comments`, `work_logs`, `analysis_items` — **전부 RLS 활성화, `user_id = auth.uid()`인 행만 조회/수정/삭제 가능** (009 마이그레이션부터). `user_id`는 `DEFAULT auth.uid()`라서 insert 시 애플리케이션 코드가 따로 채워줄 필요 없음
+- 기존 데이터(다중 사용자 도입 전에 쌓인 것)는 전부 `taesik729@gmail.com` 계정으로 귀속시켜놓음
+- `csr_subtasks` 테이블은 하위업무 기능 제거 후 미사용 상태로 남아있음(RLS 미적용, 신경 안 써도 됨)
+- Storage 버킷: `csr-attachments` (공개 읽기/쓰기 — CSR·업무일지·분석 본문에 삽입되는 이미지 업로드용, 세 화면이 같은 버킷 공유). **사용자별 격리는 안 되어 있음** — 본문에 박힌 이미지 URL을 아는 사람만 볼 수 있는 수준의 보안이며, 폴더별 완전 격리가 필요해지면 추후 별도 작업 필요
+- 마이그레이션: `src/supabase/migrations/001_init.sql` ~ `009_multi_user_auth.sql`
 
 ```sql
-ts_notes: id, note_date(date), category(MES|SPC|MMD), title, request_content, resolution_content, created_at, updated_at
-csr_tasks: id, task_no(자동증가), title, status(진행|완료), assignee, start_date, due_date, priority(낮음|보통|높음), progress(0~100), content(리치텍스트 HTML), created_at, updated_at
-csr_comments: id, task_id(FK), content, created_at
-work_logs: id, log_date(date, UNIQUE — 하루 1건), content(리치텍스트 HTML), created_at, updated_at
-analysis_items: id, parent_id(자기참조 FK, 무제한 depth 트리), system(MES|SPC|MMD, 최상위만), work_type(개발|분석, 최상위만), log_date(date, 최상위만), title, content(리치텍스트 HTML), sort_order, created_at, updated_at
+ts_notes: id, note_date(date), category(MES|SPC|MMD), title, request_content, resolution_content, user_id(FK auth.users), created_at, updated_at
+csr_tasks: id, task_no(자동증가), title, status(진행|완료), assignee, start_date, due_date, priority(낮음|보통|높음), progress(0~100), content(리치텍스트 HTML), user_id(FK auth.users), created_at, updated_at
+csr_comments: id, task_id(FK), content, user_id(FK auth.users), created_at
+work_logs: id, log_date(date), user_id(FK auth.users), UNIQUE(log_date, user_id) — 사용자별 하루 1건, content(리치텍스트 HTML), created_at, updated_at
+analysis_items: id, parent_id(자기참조 FK, 무제한 depth 트리), system(MES|SPC|MMD, 최상위만), work_type(개발|분석, 최상위만), log_date(date, 최상위만), title, content(리치텍스트 HTML), sort_order, user_id(FK auth.users), created_at, updated_at
 ```
 
 ---
@@ -49,21 +51,31 @@ src/
 │   ├── BottomNav.vue        # 하단 4탭 (CSR/TS/업무일지/설정&분석)
 │   └── AnalysisTreeNode.vue # 분석 트리용 재귀 컴포넌트 (SFC 자기 자신을 재귀 참조)
 ├── views/
+│   ├── LoginView.vue        # 로그인/회원가입 탭 UI — 비로그인 시 App.vue가 이 화면만 표시
 │   ├── TSView.vue           # TS(트러블슈팅) 화면 — 필터+그리드+상세 모두 포함, 컴포넌트 분리 안 함
 │   ├── CSRView.vue          # CSR 업무 관리 — 그리드 + 우측 슬라이드 작성/상세 패널
 │   ├── WorkView.vue         # 업무일지 — 달력 뷰 + 우측 슬라이드 작성 패널
 │   └── StudyView.vue        # 설정&분석 — 상단 필터바 + 좌측 트리 + 우측 인라인 편집 (라우트/파일명은 그대로 study)
 ├── composables/
+│   ├── useAuth.js           # Supabase Auth (signIn/signUp/signOut, user는 모듈 싱글턴 ref) — FARM MES와 동일 패턴
 │   ├── useNotes.js          # TS Supabase CRUD (fetchList/insertNote/updateNote/deleteNote)
 │   ├── useCSR.js            # CSR Supabase CRUD (useCSRTasks/useComments/uploadCSRImage) — uploadCSRImage는 업무일지·분석도 재사용
 │   ├── useWorkLogs.js       # 업무일지 Supabase CRUD (fetchMonth/fetchByDate/upsertLog/deleteLog)
 │   └── useAnalysis.js       # 분석 Supabase CRUD (fetchTree/addItem/updateItem/deleteItem)
 └── supabase/
     ├── client.js
-    └── migrations/001_init.sql ~ 008_analysis.sql
+    └── migrations/001_init.sql ~ 009_multi_user_auth.sql
 ```
 
 ---
+
+## 회원가입/로그인
+
+- **`App.vue`가 진입점 게이트 역할** — `useAuth().user`가 없으면 `LoginView`만 렌더링(라우터 가드 없이 조건부 렌더링 방식, FARM MES와 동일 패턴). 로그인되면 상단 얇은 바(앱 이름 + 이메일 + 로그아웃 버튼) + `RouterView` + `BottomNav` 레이아웃으로 전환
+- `LoginView.vue`: 로그인/회원가입 탭 하나의 폼으로 처리(`mode` ref로 분기) — 이메일/비밀번호만 입력, 별도 프로필 정보 없음
+- **가입은 이메일/비밀번호 자유가입** — 초대 코드나 도메인 제한 없음. 계정 자체는 Supabase Auth 표준 기능 그대로 사용(이메일 인증 여부는 Supabase 프로젝트 설정에 따름)
+- **데이터는 계정별로 완전 격리** — 동료가 새로 가입하면 자기가 쓴 CSR/TS/업무일지/분석만 보이고 태식님 데이터는 안 보임(공유 아님). 공유가 필요해지면 나중에 별도 설계 필요
+- 로그인 로직 자체(`useAuth.js`)는 FARM MES 프로젝트 것을 그대로 복사해서 사용 — 두 프로젝트가 같은 Supabase 프로젝트를 쓰므로 계정도 공유됨(한쪽에 가입하면 다른 쪽에도 그 계정으로 로그인 가능, 단 데이터는 앱별 테이블이 따로라 안 섞임)
 
 ## 하단 네비게이션
 
