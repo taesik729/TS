@@ -37,7 +37,7 @@ export function useWorkLogs() {
   async function upsertLog(date, content) {
     const { data, error } = await supabase
       .from('work_logs')
-      .upsert({ log_date: date, content, updated_at: new Date().toISOString() }, { onConflict: 'log_date' })
+      .upsert({ log_date: date, content, updated_at: new Date().toISOString() }, { onConflict: 'log_date,user_id' })
       .select()
       .single()
     if (error) throw error
