@@ -30,7 +30,7 @@ Vue 3 (`<script setup>`) + Vite + Supabase(JS client) + vue-router + TipTap(`@ti
 - `csr_subtasks` 테이블은 하위업무 기능 제거 후 미사용 상태로 남아있음(RLS 미적용, 신경 안 써도 됨)
 - Storage 버킷: `csr-attachments` (공개 읽기/쓰기 — CSR·업무일지·분석 본문에 삽입되는 이미지 업로드용, 세 화면이 같은 버킷 공유). **사용자별 격리는 안 되어 있음** — 본문에 박힌 이미지 URL을 아는 사람만 볼 수 있는 수준의 보안이며, 폴더별 완전 격리가 필요해지면 추후 별도 작업 필요
 - `systems` 테이블: MES/SPC/MMD 등 시스템 기준정보. 사용자별 격리 대상이 아니라 **전체 로그인 사용자 공유**(RLS는 로그인 여부만 체크)
-- 마이그레이션: `src/supabase/migrations/001_init.sql` ~ `011_system_usage_rpc.sql`
+- 마이그레이션: `src/supabase/migrations/001_init.sql` ~ `012_user_system_permissions.sql`
 
 ```sql
 ts_notes: id, note_date(date), category(text, systems.name 참조하지만 FK는 아님), title, request_content, resolution_content, user_id(FK auth.users), created_at, updated_at
@@ -64,10 +64,10 @@ src/
 │   ├── useCSR.js            # CSR Supabase CRUD (useCSRTasks/useComments/uploadCSRImage) — uploadCSRImage는 업무일지·분석도 재사용
 │   ├── useWorkLogs.js       # 업무일지 Supabase CRUD (fetchMonth/fetchByDate/upsertLog/deleteLog)
 │   ├── useAnalysis.js       # 분석 Supabase CRUD (fetchTree/addItem/updateItem/deleteItem)
-│   └── useSystems.js        # 시스템 기준정보 CRUD (fetchSystems/addSystem/deleteSystem) — TS·설정&분석이 공용으로 사용
+│   └── useSystems.js        # 시스템 기준정보 CRUD + 직원별 권한(fetchMySystems/fetchAllUsers/grantSystem/revokeSystem 등), ADMIN_EMAIL 상수 export
 └── supabase/
     ├── client.js
-    └── migrations/001_init.sql ~ 011_system_usage_rpc.sql
+    └── migrations/001_init.sql ~ 012_user_system_permissions.sql
 ```
 
 ---
@@ -80,13 +80,15 @@ src/
 - **데이터는 계정별로 완전 격리** — 동료가 새로 가입하면 자기가 쓴 CSR/TS/업무일지/분석만 보이고 태식님 데이터는 안 보임(공유 아님). 공유가 필요해지면 나중에 별도 설계 필요
 - 로그인 로직 자체(`useAuth.js`)는 FARM MES 프로젝트 것을 그대로 복사해서 사용 — 두 프로젝트가 같은 Supabase 프로젝트를 쓰므로 계정도 공유됨(한쪽에 가입하면 다른 쪽에도 그 계정으로 로그인 가능, 단 데이터는 앱별 테이블이 따로라 안 섞임)
 
-## 시스템(MES/SPC/MMD) 기준정보
+## 시스템(MES/SPC/MMD) 기준정보 + 직원별 권한
 
-- **하드코딩 배열이 아니라 `systems` 테이블에서 관리** (2026-09 도입) — `useSystems.js`가 CRUD 담당, TSView(분류 콤보)와 StudyView(시스템 콤보 + 트리 최상위 그룹)가 공용으로 `fetchSystems()` 결과를 가져다 씀
-- **전체 로그인 사용자가 공유** — 개인 소유 데이터가 아니라 회사 시스템 자체를 나타내는 값이라, 로그인만 했으면 누구나 조회·추가·삭제 가능(RLS는 `auth.role() = 'authenticated'`만 체크, 비로그인 접근만 차단)
-- **StudyView(설정&분석) 툴바의 "시스템 관리" 버튼**에서 추가/삭제 — 등록 즉시 TS 분류 콤보·설정&분석 시스템 콤보·트리 최상위 그룹에 전부 반영됨(별도 새로고침 불필요, `fetchSystems()`가 두 화면에서 각자 자기 세션에 로드)
-- **사용 중인 시스템은 삭제 차단, 전체 사용자 기준** — `useSystems.countUsage(name)`이 DB의 `count_system_usage()` RPC(SECURITY DEFINER, `011_system_usage_rpc.sql`)를 호출해서 **모든 사용자**의 `ts_notes.category`/`analysis_items.system` 중 그 이름을 쓰는 항목 개수를 집계. 1건이라도 있으면 삭제 대신 안내만 하고 막음 — RLS를 우회하지만 실제 행 데이터는 반환하지 않고 개수만 주기 때문에 다른 사용자 데이터 노출은 없음(설정&분석 트리는 최상위 그룹이 `systems` 목록 기반이라, 시스템을 지우면 그 아래 항목 전체가 트리에서 안 보이게 되는 문제를 막기 위한 안전장치)
-- `ts_notes.category`, `analysis_items.system`에 걸려있던 `CHECK (... IN ('MES','SPC','MMD'))` 제약은 010 마이그레이션에서 제거함 — 이제 `systems`에 등록한 이름이면 뭐든 저장 가능
+- **하드코딩 배열이 아니라 `systems` 테이블에서 관리** (2026-09 도입) — `useSystems.js`가 CRUD 담당
+- **시스템 마스터(등록/삭제) 자체는 관리자 전용** — `ADMIN_EMAIL`(`taesik729@gmail.com`, `useSystems.js`에 상수로 고정)로 로그인했을 때만 StudyView(설정&분석) 툴바에 **"시스템 관리" 버튼이 노출**됨. 그 모달에서 시스템 추가/삭제 + "직원 권한 관리"(직원 선택 → 시스템별 체크박스로 권한 부여/회수) 둘 다 처리
+- **TS 분류 콤보 / 설정&분석 시스템 콤보·트리는 "내가 쓸 수 있는 시스템"만 표시** — `useSystems.fetchMySystems(내이메일)` 호출: 관리자는 전체 시스템, 일반 직원은 `user_systems`(관리자가 배정한 목록)에 있는 것만 반환. **새로 가입한 직원은 관리자가 권한을 배정해주기 전까지 목록이 비어서 TS/분석에 새 항목을 못 만듦** — 의도된 동작이므로 가입 알림 받으면 바로 권한 배정 필요
+- `user_systems`(user_id, system_id) 테이블 RLS: 조회는 본인 것 또는 관리자, **배정/해제(insert/update/delete)는 관리자만** 가능(`is_admin()` SQL 함수로 `auth.jwt()->>'email'` 체크, `012_user_system_permissions.sql`)
+- `list_app_users()` RPC: 가입자 이메일 목록을 관리자만 조회 가능(SECURITY DEFINER로 `auth.users` 직접 접근 우회, 함수 내부에서 `is_admin()` 아니면 예외 발생)
+- **사용 중인 시스템은 삭제 차단, 전체 사용자 기준** — `useSystems.countUsage(name)`이 DB의 `count_system_usage()` RPC(SECURITY DEFINER, `011_system_usage_rpc.sql`)를 호출해서 **모든 사용자**의 `ts_notes.category`/`analysis_items.system` 중 그 이름을 쓰는 항목 개수를 집계. 1건이라도 있으면 삭제 대신 안내만 하고 막음(설정&분석 트리는 최상위 그룹이 `systems` 목록 기반이라, 시스템을 지우면 그 아래 항목 전체가 트리에서 안 보이게 되는 문제를 막기 위한 안전장치)
+- `ts_notes.category`, `analysis_items.system`에 걸려있던 `CHECK (... IN ('MES','SPC','MMD'))` 제약은 010 마이그레이션에서 제거함 — 이제 `systems`에 등록한 이름이면 뭐든 저장 가능. FK로 강제 연결돼있지 않은 단순 텍스트 매칭이라 관리자가 늘어나거나 역할 체계가 커지면 `is_admin()` 하나만 바꾸는 걸로는 부족해질 수 있음(지금은 관리자 1인 체제라 이메일 하드코딩으로 충분)
 
 ## 하단 네비게이션
 
