@@ -11,7 +11,7 @@ import AnalysisTreeNode from '../components/AnalysisTreeNode.vue'
 const WORK_TYPES = ['개발', '분석']
 
 const { items, loading, fetchTree, addItem, updateItem, deleteItem } = useAnalysis()
-const { systems, fetchSystems, addSystem, deleteSystem } = useSystems()
+const { systems, fetchSystems, addSystem, deleteSystem, countUsage } = useSystems()
 const SYSTEMS = computed(() => systems.value.map(s => s.name))
 
 const showSystemManage = ref(false)
@@ -24,7 +24,12 @@ async function submitNewSystem() {
 }
 
 async function removeSystem(sys) {
-  if (!confirm(`"${sys.name}" 시스템을 삭제할까요? (이미 등록된 항목의 시스템 값은 그대로 남습니다)`)) return
+  const count = await countUsage(sys.name)
+  if (count > 0) {
+    alert(`"${sys.name}" 시스템으로 저장된 항목이 ${count}건 있어 삭제할 수 없습니다.\n해당 항목들의 시스템을 먼저 변경한 뒤 삭제해주세요.`)
+    return
+  }
+  if (!confirm(`"${sys.name}" 시스템을 삭제할까요?`)) return
   await deleteSystem(sys.id)
 }
 
