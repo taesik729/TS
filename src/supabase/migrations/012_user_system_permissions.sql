@@ -53,7 +53,7 @@ BEGIN
   IF NOT is_admin() THEN
     RAISE EXCEPTION 'not authorized';
   END IF;
-  RETURN QUERY SELECT au.id, au.email FROM auth.users au ORDER BY au.email;
+  RETURN QUERY SELECT au.id, au.email::text FROM auth.users au ORDER BY au.email;
 END;
 $$;
 GRANT EXECUTE ON FUNCTION list_app_users() TO authenticated;
