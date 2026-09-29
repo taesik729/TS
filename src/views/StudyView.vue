@@ -4,13 +4,29 @@ import { useEditor, EditorContent } from '@tiptap/vue-3'
 import StarterKit from '@tiptap/starter-kit'
 import Image from '@tiptap/extension-image'
 import { useAnalysis } from '../composables/useAnalysis'
+import { useSystems } from '../composables/useSystems'
 import { uploadCSRImage } from '../composables/useCSR'
 import AnalysisTreeNode from '../components/AnalysisTreeNode.vue'
 
-const SYSTEMS = ['MES', 'SPC', 'MMD']
 const WORK_TYPES = ['개발', '분석']
 
 const { items, loading, fetchTree, addItem, updateItem, deleteItem } = useAnalysis()
+const { systems, fetchSystems, addSystem, deleteSystem } = useSystems()
+const SYSTEMS = computed(() => systems.value.map(s => s.name))
+
+const showSystemManage = ref(false)
+const newSystemName = ref('')
+
+async function submitNewSystem() {
+  if (!newSystemName.value.trim()) return
+  await addSystem(newSystemName.value)
+  newSystemName.value = ''
+}
+
+async function removeSystem(sys) {
+  if (!confirm(`"${sys.name}" 시스템을 삭제할까요? (이미 등록된 항목의 시스템 값은 그대로 남습니다)`)) return
+  await deleteSystem(sys.id)
+}
 
 function todayStr() {
   return new Date().toISOString().slice(0, 10)
@@ -91,7 +107,10 @@ function clearDateRange() {
   filterDateTo.value = ''
 }
 
-onMounted(reloadTree)
+onMounted(() => {
+  reloadTree()
+  fetchSystems()
+})
 watch([filterDateFrom, filterDateTo, filterSystem, filterWorkType], reloadTree)
 
 const treeRoots = computed(() => {
@@ -106,7 +125,7 @@ const treeRoots = computed(() => {
     }
   })
 
-  return SYSTEMS.map(sys => ({
+  return SYSTEMS.value.map(sys => ({
     id: `sys-${sys}`,
     title: sys,
     virtual: true,
@@ -277,7 +296,7 @@ function startNewRoot() {
   newChildParentTitle.value = ''
   isEditing.value = true
   draft.value = emptyDraft({
-    system: filterSystem.value || 'MES',
+    system: filterSystem.value || SYSTEMS.value[0] || '',
     work_type: filterWorkType.value || '개발',
     log_date: filterDateFrom.value || todayStr()
   })
@@ -375,7 +394,31 @@ async function handleDelete() {
         </div>
       </div>
       <button @click="reloadTree">검색</button>
+      <button @click="showSystemManage = true">시스템 관리</button>
       <button class="primary" @click="startNewRoot">추가</button>
+    </div>
+
+    <div v-if="showSystemManage" class="modal-overlay" @click.self="showSystemManage = false">
+      <div class="modal system-modal">
+        <h3>시스템 관리</h3>
+        <p class="system-modal-hint">여기서 등록한 시스템은 TS·설정&분석 화면의 시스템 목록에 모두 반영됩니다.</p>
+        <ul class="system-list">
+          <li v-for="s in systems" :key="s.id">
+            <span>{{ s.name }}</span>
+            <button class="danger" @click="removeSystem(s)">삭제</button>
+          </li>
+          <li v-if="!systems.length" class="empty">등록된 시스템이 없습니다.</li>
+        </ul>
+        <form class="system-add-form" @submit.prevent="submitNewSystem">
+          <input type="text" v-model="newSystemName" placeholder="새 시스템 이름" />
+          <button type="submit" class="primary">추가</button>
+        </form>
+        <div class="modal-actions">
+          <div class="modal-actions-right">
+            <button @click="showSystemManage = false">닫기</button>
+          </div>
+        </div>
+      </div>
     </div>
 
     <div class="an-body">
@@ -662,6 +705,91 @@ async function handleDelete() {
 
 .danger:hover {
   background: #fef2f2;
+}
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 20, 30, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+
+.modal {
+  background: var(--color-surface);
+  width: 420px;
+  max-width: 92vw;
+  max-height: 85vh;
+  overflow-y: auto;
+  padding: 24px;
+  border-radius: 12px;
+  box-shadow: var(--shadow-md);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.modal h3 {
+  margin: 0;
+  font-size: 16px;
+}
+
+.system-modal-hint {
+  margin: 0;
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.system-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.system-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  font-size: 14px;
+}
+
+.system-list li.empty {
+  justify-content: center;
+  color: var(--color-text-muted);
+  font-size: 13px;
+  border-style: dashed;
+}
+
+.system-list .danger {
+  margin-right: 0;
+  padding: 3px 8px;
+  font-size: 12px;
+}
+
+.system-add-form {
+  display: flex;
+  gap: 8px;
+}
+
+.system-add-form input {
+  flex: 1;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 8px;
+  border-top: 1px solid var(--color-border);
 }
 
 @media (max-width: 720px) {

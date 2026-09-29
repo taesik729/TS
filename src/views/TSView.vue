@@ -1,10 +1,11 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
 import { useNotes } from '../composables/useNotes'
-
-const CATEGORIES = ['MES', 'SPC', 'MMD']
+import { useSystems } from '../composables/useSystems'
 
 const { notes, loading, fetchList, insertNote, updateNote, deleteNote } = useNotes()
+const { systems, fetchSystems } = useSystems()
+const CATEGORIES = computed(() => systems.value.map(s => s.name))
 
 function todayStr() {
   return new Date().toISOString().slice(0, 10)
@@ -42,7 +43,10 @@ function clearDateRange() {
   filterDateTo.value = ''
 }
 
-onMounted(reload)
+onMounted(() => {
+  reload()
+  fetchSystems()
+})
 watch([filterDateFrom, filterDateTo, filterCategory], reload)
 
 function selectRow(note) {
@@ -53,7 +57,7 @@ function openAdd() {
   modalMode.value = 'add'
   draft.value = {
     note_date: filterDateFrom.value || todayStr(),
-    category: filterCategory.value || 'MES',
+    category: filterCategory.value || CATEGORIES.value[0] || '',
     title: '',
     request_content: '',
     resolution_content: ''
