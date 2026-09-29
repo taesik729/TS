@@ -36,16 +36,12 @@ export function useSystems() {
     systems.value = systems.value.filter(s => s.id !== id)
   }
 
-  // 내가 로그인한 계정 기준으로 이 시스템 이름을 쓰고 있는 TS노트/분석항목 개수
-  // (RLS 때문에 다른 사용자의 데이터는 여기서 집계되지 않음 — 완전한 전체 사용량 체크는 아님)
+  // 전체 사용자 기준으로 이 시스템 이름을 쓰고 있는 TS노트/분석항목 개수
+  // (DB에 만든 count_system_usage RPC가 SECURITY DEFINER로 RLS를 우회해서 집계만 반환 — 실제 데이터는 노출 안 됨)
   async function countUsage(name) {
-    const [ts, analysis] = await Promise.all([
-      supabase.from('ts_notes').select('id', { count: 'exact', head: true }).eq('category', name),
-      supabase.from('analysis_items').select('id', { count: 'exact', head: true }).eq('system', name)
-    ])
-    if (ts.error) throw ts.error
-    if (analysis.error) throw analysis.error
-    return (ts.count || 0) + (analysis.count || 0)
+    const { data, error } = await supabase.rpc('count_system_usage', { system_name: name })
+    if (error) throw error
+    return data || 0
   }
 
   return { systems, loading, fetchSystems, addSystem, deleteSystem, countUsage }
