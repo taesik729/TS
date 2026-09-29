@@ -2,9 +2,11 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useNotes } from '../composables/useNotes'
 import { useSystems } from '../composables/useSystems'
+import { useAuth } from '../composables/useAuth'
 
 const { notes, loading, fetchList, insertNote, updateNote, deleteNote } = useNotes()
-const { systems, fetchSystems } = useSystems()
+const { systems, fetchMySystems } = useSystems()
+const { user } = useAuth()
 const CATEGORIES = computed(() => systems.value.map(s => s.name))
 
 function todayStr() {
@@ -45,7 +47,7 @@ function clearDateRange() {
 
 onMounted(() => {
   reload()
-  fetchSystems()
+  fetchMySystems(user.value?.email)
 })
 watch([filterDateFrom, filterDateTo, filterCategory], reload)
 

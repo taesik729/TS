@@ -4,18 +4,50 @@ import { useEditor, EditorContent } from '@tiptap/vue-3'
 import StarterKit from '@tiptap/starter-kit'
 import Image from '@tiptap/extension-image'
 import { useAnalysis } from '../composables/useAnalysis'
-import { useSystems } from '../composables/useSystems'
+import { useSystems, ADMIN_EMAIL } from '../composables/useSystems'
+import { useAuth } from '../composables/useAuth'
 import { uploadCSRImage } from '../composables/useCSR'
 import AnalysisTreeNode from '../components/AnalysisTreeNode.vue'
 
 const WORK_TYPES = ['개발', '분석']
 
 const { items, loading, fetchTree, addItem, updateItem, deleteItem } = useAnalysis()
-const { systems, fetchSystems, addSystem, deleteSystem, countUsage } = useSystems()
+const {
+  systems, fetchMySystems, addSystem, deleteSystem, countUsage,
+  fetchAllUsers, fetchUserSystemIds, grantSystem, revokeSystem
+} = useSystems()
+const { user } = useAuth()
 const SYSTEMS = computed(() => systems.value.map(s => s.name))
+const isAdmin = computed(() => user.value?.email === ADMIN_EMAIL)
 
 const showSystemManage = ref(false)
 const newSystemName = ref('')
+const allUsers = ref([])
+const selectedUserId = ref('')
+const userSystemIds = ref(new Set())
+
+async function openSystemManage() {
+  showSystemManage.value = true
+  if (isAdmin.value) {
+    allUsers.value = await fetchAllUsers()
+  }
+}
+
+watch(selectedUserId, async (id) => {
+  userSystemIds.value = id ? await fetchUserSystemIds(id) : new Set()
+})
+
+async function togglePermission(sys) {
+  if (!selectedUserId.value) return
+  if (userSystemIds.value.has(sys.id)) {
+    await revokeSystem(selectedUserId.value, sys.id)
+    userSystemIds.value.delete(sys.id)
+  } else {
+    await grantSystem(selectedUserId.value, sys.id)
+    userSystemIds.value.add(sys.id)
+  }
+  userSystemIds.value = new Set(userSystemIds.value)
+}
 
 async function submitNewSystem() {
   if (!newSystemName.value.trim()) return
@@ -114,7 +146,7 @@ function clearDateRange() {
 
 onMounted(() => {
   reloadTree()
-  fetchSystems()
+  fetchMySystems(user.value?.email)
 })
 watch([filterDateFrom, filterDateTo, filterSystem, filterWorkType], reloadTree)
 
@@ -399,7 +431,7 @@ async function handleDelete() {
         </div>
       </div>
       <button @click="reloadTree">검색</button>
-      <button @click="showSystemManage = true">시스템 관리</button>
+      <button v-if="isAdmin" @click="openSystemManage">시스템 관리</button>
       <button class="primary" @click="startNewRoot">추가</button>
     </div>
 
@@ -418,6 +450,28 @@ async function handleDelete() {
           <input type="text" v-model="newSystemName" placeholder="새 시스템 이름" />
           <button type="submit" class="primary">추가</button>
         </form>
+
+        <div class="perm-section">
+          <h4>직원 권한 관리</h4>
+          <p class="system-modal-hint">선택한 직원이 TS·설정&분석에서 쓸 수 있는 시스템을 체크해주세요.</p>
+          <select v-model="selectedUserId">
+            <option value="">직원 선택</option>
+            <option v-for="u in allUsers" :key="u.id" :value="u.id">{{ u.email }}</option>
+          </select>
+          <ul v-if="selectedUserId" class="perm-list">
+            <li v-for="s in systems" :key="s.id">
+              <label>
+                <input
+                  type="checkbox"
+                  :checked="userSystemIds.has(s.id)"
+                  @change="togglePermission(s)"
+                />
+                {{ s.name }}
+              </label>
+            </li>
+          </ul>
+        </div>
+
         <div class="modal-actions">
           <div class="modal-actions-right">
             <button @click="showSystemManage = false">닫기</button>
@@ -784,6 +838,37 @@ async function handleDelete() {
 .system-add-form {
   display: flex;
   gap: 8px;
+}
+
+.perm-section {
+  padding-top: 14px;
+  border-top: 1px solid var(--color-border);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.perm-section h4 {
+  margin: 0;
+  font-size: 13px;
+}
+
+.perm-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 160px;
+  overflow-y: auto;
+}
+
+.perm-list label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
 }
 
 .system-add-form input {
