@@ -29,7 +29,11 @@ const userSystemIds = ref(new Set())
 async function openSystemManage() {
   showSystemManage.value = true
   if (isAdmin.value) {
-    allUsers.value = await fetchAllUsers()
+    try {
+      allUsers.value = await fetchAllUsers()
+    } catch (e) {
+      alert('직원 목록을 불러오지 못했습니다: ' + e.message)
+    }
   }
 }
 
@@ -39,14 +43,18 @@ watch(selectedUserId, async (id) => {
 
 async function togglePermission(sys) {
   if (!selectedUserId.value) return
-  if (userSystemIds.value.has(sys.id)) {
-    await revokeSystem(selectedUserId.value, sys.id)
-    userSystemIds.value.delete(sys.id)
-  } else {
-    await grantSystem(selectedUserId.value, sys.id)
-    userSystemIds.value.add(sys.id)
+  try {
+    if (userSystemIds.value.has(sys.id)) {
+      await revokeSystem(selectedUserId.value, sys.id)
+      userSystemIds.value.delete(sys.id)
+    } else {
+      await grantSystem(selectedUserId.value, sys.id)
+      userSystemIds.value.add(sys.id)
+    }
+    userSystemIds.value = new Set(userSystemIds.value)
+  } catch (e) {
+    alert('권한 변경에 실패했습니다: ' + e.message)
   }
-  userSystemIds.value = new Set(userSystemIds.value)
 }
 
 async function submitNewSystem() {
