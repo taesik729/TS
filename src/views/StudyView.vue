@@ -26,6 +26,11 @@ const allUsers = ref([])
 const selectedUserId = ref('')
 const userSystemIds = ref(new Set())
 
+function formatJoinDate(iso) {
+  if (!iso) return ''
+  return iso.slice(0, 10)
+}
+
 async function openSystemManage() {
   showSystemManage.value = true
   if (isAdmin.value) {
@@ -464,7 +469,7 @@ async function handleDelete() {
           <p class="system-modal-hint">선택한 직원이 TS·설정&분석에서 쓸 수 있는 시스템을 체크해주세요.</p>
           <select v-model="selectedUserId">
             <option value="">직원 선택</option>
-            <option v-for="u in allUsers" :key="u.id" :value="u.id">{{ u.email }}</option>
+            <option v-for="u in allUsers" :key="u.id" :value="u.id">{{ u.email }} ({{ formatJoinDate(u.created_at) }} 가입)</option>
           </select>
           <ul v-if="selectedUserId" class="perm-list">
             <li v-for="s in systems" :key="s.id">

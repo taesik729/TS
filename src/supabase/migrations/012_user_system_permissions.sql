@@ -43,8 +43,10 @@ CREATE POLICY "user_systems delete admin only" ON user_systems
 
 -- 관리자가 "직원 권한 관리" 화면에서 가입자 목록을 보기 위한 RPC
 -- (auth.users는 앱에서 직접 조회 불가하므로 SECURITY DEFINER로 우회, 관리자만 호출 가능하도록 내부에서 체크)
-CREATE OR REPLACE FUNCTION list_app_users()
-RETURNS TABLE(id UUID, email TEXT)
+-- 반환 컬럼 구성이 바뀌므로(email만 → email+created_at) 기존 함수를 먼저 삭제 후 재생성
+DROP FUNCTION IF EXISTS list_app_users();
+CREATE FUNCTION list_app_users()
+RETURNS TABLE(id UUID, email TEXT, created_at TIMESTAMPTZ)
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = public
@@ -53,7 +55,7 @@ BEGIN
   IF NOT is_admin() THEN
     RAISE EXCEPTION 'not authorized';
   END IF;
-  RETURN QUERY SELECT au.id, au.email::text FROM auth.users au ORDER BY au.email;
+  RETURN QUERY SELECT au.id, au.email::text, au.created_at FROM auth.users au ORDER BY au.created_at DESC;
 END;
 $$;
 GRANT EXECUTE ON FUNCTION list_app_users() TO authenticated;
